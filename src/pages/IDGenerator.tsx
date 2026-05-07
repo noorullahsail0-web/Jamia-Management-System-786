@@ -121,27 +121,30 @@ export default function IDGenerator() {
                         <span className="border-b border-gray-200 truncate">{student.fatherName}</span>
                         
                         <span className="font-bold text-emerald-900">تاریخ پیدائش:</span>
-                        <span className="border-b border-gray-200">{student.dob}</span>
+                        <span className="border-b border-gray-200">{student.dob.split('-').reverse().join('-')}</span>
                         
                         <span className="font-bold text-emerald-900">شناختی کارڈ:</span>
                         <span className="border-b border-gray-200">{student.cnic}</span>
                         
                         <span className="font-bold text-emerald-900">سیکشن:</span>
                         <span className="border-b border-gray-200">{student.section}</span>
-                        
-                        <span className="font-bold text-emerald-900">درجہ:</span>
-                        <span className="border-b border-gray-200">{student.currentClass}</span>
                       </div>
                     </div>
 
-                    {/* Image Placeholder (Only for Boys) */}
+                    {/* Image Placeholder & Class (Only for Boys) */}
                     {student.section !== Section.BANAT_DARS_NIYAMI && (
-                      <div className="w-20 h-24 border border-emerald-900 rounded bg-gray-50 flex items-center justify-center shrink-0 mt-1">
-                        {student.photoUrl ? (
-                          <img src={student.photoUrl} alt="Student" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <User className="w-8 h-8 text-gray-300" />
-                        )}
+                      <div className="flex flex-col items-center gap-1 shrink-0 mt-1">
+                        <div className="w-20 h-24 border border-emerald-900 rounded bg-gray-50 flex items-center justify-center overflow-hidden">
+                          {student.photoUrl ? (
+                            <img src={student.photoUrl} alt="Student" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <User className="w-8 h-8 text-gray-300" />
+                          )}
+                        </div>
+                        {/* Highlights Class/Darja under photo as requested */}
+                        <div className="w-20 bg-emerald-900 text-white text-[9px] py-0.5 rounded text-center font-bold">
+                          {student.currentClass}
+                        </div>
                       </div>
                     )}
                   </div>
