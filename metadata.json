@@ -1,0 +1,11 @@
+{
+  "name": "جامعہ مینجمنٹ سسٹم",
+  "description": "جامعہ تعلیم القرآن کے لیے ایک جامع تعلیمی نظم و ضبط کا سسٹم جس میں داخلہ، حاضری، اور امتحانات کا انتظام شامل ہے۔",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "Student Management",
+    "Attendance Tracking",
+    "Exam Results",
+    "ID Card Generation"
+  ]
+}

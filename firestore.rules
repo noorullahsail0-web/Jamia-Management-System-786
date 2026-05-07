@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'noorullahsail0@gmail.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Student Validation
+    function isValidStudent(data) {
+      return data.regNo is string && data.regNo.size() <= 50
+        && data.name is string && data.name.size() <= 100
+        && data.fatherName is string && data.fatherName.size() <= 100
+        && data.phone is string && data.phone.size() <= 20
+        && data.section in ['بنین درس نظامی', 'بنات درس نظامی', 'بنین درجہ حفظ']
+        && data.currentClass is string && data.currentClass.size() <= 50;
+    }
+
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidId(studentId) && isValidStudent(incoming());
+      allow update: if isAdmin() && isValidStudent(incoming()) 
+                     && incoming().regNo == existing().regNo;
+      allow delete: if isAdmin();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidId(attendanceId)
+        && incoming().status in ['present', 'absent', 'leave']
+        && incoming().date is string;
+      allow update: if isAdmin() && incoming().status in ['present', 'absent', 'leave'];
+      allow delete: if isAdmin();
+    }
+
+    match /results/{resultId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidId(resultId)
+        && incoming().examType in ['امتحان سہ ماہی', 'امتحان شش ماہی', 'امتحان سالانہ']
+        && incoming().year is string;
+      allow update: if isAdmin() && isValidId(resultId);
+      allow delete: if isAdmin();
+    }
+  }
+}

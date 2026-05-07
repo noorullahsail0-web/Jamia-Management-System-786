@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student admission record",
+      "type": "object",
+      "properties": {
+        "regNo": { "type": "string", "description": "Auto-generated registration number" },
+        "name": { "type": "string" },
+        "fatherName": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "cnic": { "type": "string", "description": "CNIC or Form-B number" },
+        "section": { "type": "string", "enum": ["بنین درس نظامی", "بنات درس نظامی", "بنین درجہ حفظ"] },
+        "currentClass": { "type": "string" },
+        "isResident": { "type": "boolean", "description": "Mukeem or Ghair Mukeem" },
+        "phone": { "type": "string" },
+        "admissionDate": { "type": "string", "format": "date" },
+        "address": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "left", "graduated"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["regNo", "name", "fatherName", "section", "currentClass", "phone"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["present", "absent", "leave"] },
+        "section": { "type": "string" },
+        "class": { "type": "string" }
+      },
+      "required": ["studentId", "date", "status"]
+    },
+    "ExamResult": {
+      "title": "Exam Result",
+      "description": "Marks obtained in exams",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "examType": { "type": "string", "enum": ["امتحان سہ ماہی", "امتحان شش ماہی", "امتحان سالانہ"] },
+        "year": { "type": "string" },
+        "class": { "type": "string" },
+        "subjects": {
+          "type": "object",
+          "description": "Key-value pair of subject: marks"
+        },
+        "hifzBreakdown": {
+          "type": "object",
+          "description": "Breakdown for Hifz students (Q1, Q2, Q3, Lahja, Safai, Adiya)"
+        },
+        "totalMarks": { "type": "number" },
+        "percentage": { "type": "number" },
+        "grade": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "examType", "year"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student records"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Daily attendance"
+    },
+    "/results/{resultId}": {
+      "schema": "ExamResult",
+      "description": "Exam marks"
+    }
+  }
+}
