@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { Section, Student, ExamResult, ExamType } from '../types';
@@ -55,9 +56,9 @@ export default function Results() {
       
       let total = 0;
       if (isHifz) {
-        total = hifzMarks.q1 + hifzMarks.q2 + hifzMarks.q3 + hifzMarks.lahja + hifzMarks.safai + hifzMarks.adiya;
+        total = Number(hifzMarks.q1) + Number(hifzMarks.q2) + Number(hifzMarks.q3) + Number(hifzMarks.lahja) + Number(hifzMarks.safai) + Number(hifzMarks.adiya);
       } else {
-        total = Object.values(marks).reduce((a, b) => a + b, 0);
+        total = (Object.values(marks) as number[]).reduce((a, b) => a + b, 0);
       }
 
       const maxTotal = isHifz ? 100 : (classData?.subjects.length || 0) * 100;

@@ -8,7 +8,7 @@ service cloud.firestore {
 
     // Global helpers
     function isSignedIn() {
-      return request.auth != null && request.auth.token.email_verified == true;
+      return request.auth != null;
     }
 
     function isAdmin() {
@@ -18,7 +18,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128;
     }
 
     function incoming() {
@@ -31,16 +31,16 @@ service cloud.firestore {
 
     // Student Validation
     function isValidStudent(data) {
-      return data.regNo is string && data.regNo.size() <= 50
-        && data.name is string && data.name.size() <= 100
-        && data.fatherName is string && data.fatherName.size() <= 100
-        && data.phone is string && data.phone.size() <= 20
+      return data.regNo is string && data.regNo.size() <= 100
+        && data.name is string && data.name.size() <= 200
+        && data.fatherName is string && data.fatherName.size() <= 200
+        && data.phone is string && data.phone.size() <= 50
         && data.section in ['بنین درس نظامی', 'بنات درس نظامی', 'بنین درجہ حفظ']
-        && data.currentClass is string && data.currentClass.size() <= 50;
+        && data.currentClass is string && data.currentClass.size() <= 150;
     }
 
     match /students/{studentId} {
-      allow read: if isSignedIn();
+      allow read, list: if isSignedIn();
       allow create: if isAdmin() && isValidId(studentId) && isValidStudent(incoming());
       allow update: if isAdmin() && isValidStudent(incoming()) 
                      && incoming().regNo == existing().regNo;
@@ -48,7 +48,7 @@ service cloud.firestore {
     }
 
     match /attendance/{attendanceId} {
-      allow read: if isSignedIn();
+      allow read, list: if isSignedIn();
       allow create: if isAdmin() && isValidId(attendanceId)
         && incoming().status in ['present', 'absent', 'leave']
         && incoming().date is string;
@@ -57,11 +57,11 @@ service cloud.firestore {
     }
 
     match /results/{resultId} {
-      allow read: if isSignedIn();
+      allow read, list: if isSignedIn();
       allow create: if isAdmin() && isValidId(resultId)
         && incoming().examType in ['امتحان سہ ماہی', 'امتحان شش ماہی', 'امتحان سالانہ']
         && incoming().year is string;
-      allow update: if isAdmin() && isValidId(resultId);
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
   }

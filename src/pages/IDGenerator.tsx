@@ -6,6 +6,7 @@ import { CLASS_DATA } from '../constants';
 import { CreditCard, Printer, Search, Loader2, User } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { cn } from '../lib/utils';
+import logo from '../assets/logo.svg';
 
 export default function IDGenerator() {
   const [section, setSection] = useState<Section | ''>('');
@@ -103,8 +104,10 @@ export default function IDGenerator() {
                   style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
                 >
                   {/* Card Header with Reg No */}
-                  <div className="bg-emerald-900 text-white text-center py-1 font-mono tracking-widest text-[12px] font-bold">
-                    {student.regNo}
+                  <div className="bg-emerald-900 text-white flex items-center justify-between px-2 py-1 font-mono tracking-widest text-[12px] font-bold">
+                    <img src={logo} alt="Logo" className="w-5 h-5 object-contain bg-white rounded-full p-0.5" referrerPolicy="no-referrer" />
+                    <span>{student.regNo}</span>
+                    <div className="w-5" /> {/* Spacer */}
                   </div>
 
                   <div className="flex flex-1 p-2 gap-2 overflow-hidden">
@@ -135,7 +138,7 @@ export default function IDGenerator() {
                     {student.section !== Section.BANAT_DARS_NIYAMI && (
                       <div className="w-20 h-24 border border-emerald-900 rounded bg-gray-50 flex items-center justify-center shrink-0 mt-1">
                         {student.photoUrl ? (
-                          <img src={student.photoUrl} alt="Student" className="w-full h-full object-cover" />
+                          <img src={student.photoUrl} alt="Student" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <User className="w-8 h-8 text-gray-300" />
                         )}

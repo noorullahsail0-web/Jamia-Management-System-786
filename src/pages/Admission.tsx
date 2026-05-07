@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { db, storage, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Section, Student } from '../types';
 import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
-import { Plus, Search, FileText, UserPlus, Camera, Loader2, X } from 'lucide-react';
+import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function Admission() {
@@ -193,10 +194,10 @@ export default function Admission() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl relative my-8"
           >
-            <div className="p-8 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-3xl z-10">
-              <div className="flex items-center gap-3 text-emerald-600">
-                <UserPlus className="w-6 h-6" />
-                <h3 className="text-2xl font-bold">نیا داخلہ فارم</h3>
+            <div className="p-8 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-3xl z-10 font-urdu">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">داخلہ فارم</h3>
+                <p className="text-gray-500 text-sm">نئے طالب علم کے اندراج کے لیے تمام معلومات درج کریں۔</p>
               </div>
               <button 
                 onClick={() => setShowForm(false)}
@@ -206,8 +207,8 @@ export default function Admission() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-8 overflow-y-auto max-h-[70vh]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="p-8 overflow-y-auto max-h-[70vh] font-urdu">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 {/* Photo Upload - Only for Boys as per request */}
                 {selectedSection !== Section.BANAT_DARS_NIYAMI && (
                   <div className="md:col-span-2 flex justify-center mb-6">
@@ -245,70 +246,104 @@ export default function Admission() {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">طالب علم کا نام</label>
-                  <input {...register('name', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" placeholder="محمد احمد" />
+                  <label className="block text-right font-medium text-gray-700">طالب علم کا نام</label>
+                  <input {...register('name', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" placeholder="مثلاً احمد علی" />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">ولدیت</label>
-                  <input {...register('fatherName', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" placeholder="عبداللہ" />
+                  <label className="block text-right font-medium text-gray-700">والد کا نام</label>
+                  <input {...register('fatherName', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" placeholder="مثلاً احمد خان" />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">تاریخ پیدائش</label>
-                  <input {...register('dob', { required: true })} type="date" className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" />
+                  <label className="block text-right font-medium text-gray-700">تاریخ پیدائش</label>
+                  <input {...register('dob', { required: true })} type="date" className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">شناختی کارڈ / فارم ب نمبر</label>
-                  <input {...register('cnic')} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" placeholder="17301-0000000-1" />
+                  <label className="block text-right font-medium text-gray-700">شناختی کارڈ / فارم ب نمبر</label>
+                  <input 
+                    {...register('cnic')} 
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/[^0-9]/g, '');
+                      if (val.length > 13) val = val.substring(0, 13);
+                      
+                      let formatted = val;
+                      if (val.length > 5 && val.length <= 12) {
+                        formatted = val.slice(0, 5) + '-' + val.slice(5);
+                      } else if (val.length > 12) {
+                        formatted = val.slice(0, 5) + '-' + val.slice(5, 12) + '-' + val.slice(12);
+                      }
+                      
+                      setValue('cnic', formatted);
+                    }}
+                    className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right font-mono" 
+                    placeholder="XXXXX-XXXXXXX-X" 
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">سیکشن</label>
-                  <select {...register('section', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg">
-                    <option value="">سیکشن منتخب کریں</option>
+                  <label className="block text-right font-medium text-gray-700">شعبہ</label>
+                  <select {...register('section', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right">
+                    <option value="">شعبہ منتخب کریں</option>
                     {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">درجہ / کلاس</label>
-                  <select {...register('currentClass', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" disabled={!selectedSection}>
-                    <option value="">درجہ منتخب کریں</option>
+                  <label className="block text-right font-medium text-gray-700">کلاس</label>
+                  <select {...register('currentClass', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" disabled={!selectedSection}>
+                    <option value="">کلاس منتخب کریں</option>
                     {selectedSection && CLASS_DATA[selectedSection].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">مقیم / غیر مقیم</label>
-                  <select {...register('isResident', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg">
-                    <option value="false">غیر مقیم (ڈے اسکالر)</option>
-                    <option value="true">مقیم (ہاسٹل)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">فون نمبر (والد)</label>
-                  <input {...register('phone', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" placeholder="0300-0000000" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700">داخلہ کی تاریخ</label>
-                  <input {...register('admissionDate', { required: true })} type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" />
+                <div className="md:col-span-2 space-y-3">
+                  <label className="block text-right font-medium text-gray-700">رہائشی حیثیت</label>
+                  <div className="flex items-center gap-8 justify-end">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <span className="text-lg">غیر مقیم</span>
+                      <input 
+                        type="radio" 
+                        value="false" 
+                        {...register('isResident', { required: true })}
+                        className="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                        defaultChecked
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <span className="text-lg">مقیم</span>
+                      <input 
+                        type="radio" 
+                        value="true" 
+                        {...register('isResident', { required: true })}
+                        className="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-bold text-gray-700">مستقل پتہ</label>
-                  <textarea {...register('address', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-lg" rows={3} placeholder="گاؤں چرہ پل، محلہ توحید آباد، پشاور"></textarea>
+                  <label className="block text-right font-medium text-gray-700">مستقل پتہ</label>
+                  <textarea {...register('address', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" rows={2} placeholder="گلی، محلہ، شہر"></textarea>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-right font-medium text-gray-700">سرپرست کا فون نمبر</label>
+                  <input {...register('phone', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" placeholder="03XXXXXXXXX" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-right font-medium text-gray-700">تاریخ داخلہ</label>
+                  <input {...register('admissionDate', { required: true })} type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" />
                 </div>
               </div>
 
-              <div className="mt-10 flex gap-4">
+              <div className="mt-10 flex justify-start">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-bold py-4 px-8 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-emerald-100"
+                  className="bg-[#1a237e] hover:bg-[#0d47a1] disabled:bg-gray-400 text-white font-bold py-3 px-10 rounded-lg flex items-center justify-center gap-3 transition-all shadow-lg"
                 >
                   {loading ? (
                     <>
@@ -317,17 +352,10 @@ export default function Admission() {
                     </>
                   ) : (
                     <>
-                      <FileText className="w-6 h-6" />
-                      <span>داخلہ مکمل کریں</span>
+                      <Save className="w-6 h-6" />
+                      <span>طالب علم محفوظ کریں</span>
                     </>
                   )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-8 py-4 border-2 border-gray-100 font-bold rounded-2xl text-gray-500 hover:bg-gray-50 transition-all font-urdu"
-                >
-                  منسوخ کریں
                 </button>
               </div>
             </form>
