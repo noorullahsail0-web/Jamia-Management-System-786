@@ -89,12 +89,7 @@ export default function Admission() {
       let photoUrl = '';
       if (selectedPhoto) {
         setUploadingInfo('تصویر تیار ہو رہی ہے...');
-        const compressedBlob = await compressImage(selectedPhoto);
-        
-        setUploadingInfo('تصویر اپلوڈ ہو رہی ہے...');
-        const storageRef = ref(storage, `students/${regNo}_${Date.now()}`);
-        await uploadBytes(storageRef, compressedBlob);
-        photoUrl = await getDownloadURL(storageRef);
+        photoUrl = await compressImage(selectedPhoto);
       }
 
       setUploadingInfo('ڈیٹا محفوظ ہو رہا ہے...');
