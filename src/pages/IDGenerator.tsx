@@ -1,10 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Section, Student } from '../types';
 import { CLASS_DATA } from '../constants';
-import { CreditCard, Printer, Search, Loader2, User } from 'lucide-react';
-import { useReactToPrint } from 'react-to-print';
+import { Search, Loader2, User, Printer } from 'lucide-react';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
 
@@ -13,7 +12,10 @@ export default function IDGenerator() {
   const [currentClass, setCurrentClass] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const fetchStudents = async () => {
     if (!section || !currentClass) return;
@@ -32,11 +34,6 @@ export default function IDGenerator() {
       setLoading(false);
     }
   };
-
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `ID_Cards_${currentClass}`,
-  });
 
   return (
     <div className="space-y-8">
@@ -93,7 +90,7 @@ export default function IDGenerator() {
             <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
           </div>
         ) : (
-          <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center bg-white p-8 rounded-3xl min-w-[350px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center bg-white p-8 rounded-3xl min-w-[350px] print-only-cards">
             {students.length === 0 ? (
               <p className="text-gray-400 italic">کوئی ریکارڈ منتخب نہیں کیا گیا</p>
             ) : (
@@ -165,6 +162,29 @@ export default function IDGenerator() {
           </div>
         )}
       </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { 
+            size: A4 portrait; 
+            margin: 1cm;
+          }
+          body * { visibility: hidden; }
+          .print-only-cards, .print-only-cards * { visibility: visible; }
+          .print-only-cards { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100%;
+            display: grid !important;
+            grid-template-cols: 1fr 1fr !important;
+            gap: 20px !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          button, select, label { display: none !important; }
+        }
+      ` }} />
     </div>
   );
 }

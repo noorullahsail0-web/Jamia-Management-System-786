@@ -90,6 +90,19 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex overflow-hidden font-urdu" dir="rtl">
+      {/* Sidebar Overlay for Mobile */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <aside 
         className={cn(
@@ -112,7 +125,12 @@ export default function App() {
             {menuItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id as Tab)}
+                onClick={() => {
+                  setActiveTab(item.id as Tab);
+                  if (window.innerWidth < 1024) {
+                    setIsSidebarOpen(false);
+                  }
+                }}
                 className={cn(
                   "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group text-right",
                   activeTab === item.id 
