@@ -6,7 +6,7 @@ import { CLASS_DATA } from '../constants';
 import { CreditCard, Printer, Search, Loader2, User } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { cn } from '../lib/utils';
-import logo from '../assets/logo.svg';
+import logo from '../assets/logo.png';
 
 export default function IDGenerator() {
   const [section, setSection] = useState<Section | ''>('');
@@ -105,7 +105,7 @@ export default function IDGenerator() {
                 >
                   {/* Card Header with Reg No */}
                   <div className="bg-emerald-900 text-white flex items-center justify-between px-2 py-1 font-mono tracking-widest text-[12px] font-bold">
-                    <img src={logo} alt="Logo" className="w-5 h-5 object-contain bg-white rounded-full p-0.5" referrerPolicy="no-referrer" />
+                    <img src={logo} alt="Logo" className="w-5 h-5 object-contain bg-white rounded-full p-0.5" />
                     <span>{student.regNo}</span>
                     <div className="w-5" /> {/* Spacer */}
                   </div>

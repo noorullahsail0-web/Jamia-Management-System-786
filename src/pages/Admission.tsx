@@ -7,7 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Section, Student } from '../types';
 import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
 import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, compressImage } from '../lib/utils';
 
 export default function Admission() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -88,9 +88,12 @@ export default function Admission() {
       
       let photoUrl = '';
       if (selectedPhoto) {
+        setUploadingInfo('تصویر تیار ہو رہی ہے...');
+        const compressedBlob = await compressImage(selectedPhoto);
+        
         setUploadingInfo('تصویر اپلوڈ ہو رہی ہے...');
         const storageRef = ref(storage, `students/${regNo}_${Date.now()}`);
-        await uploadBytes(storageRef, selectedPhoto);
+        await uploadBytes(storageRef, compressedBlob);
         photoUrl = await getDownloadURL(storageRef);
       }
 
