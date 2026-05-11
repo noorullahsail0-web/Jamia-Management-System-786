@@ -207,8 +207,8 @@ export default function Admission() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 overflow-y-auto max-h-[70vh] font-urdu">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Photo Upload - Only for Boys as per request */}
-                {selectedSection !== Section.BANAT_DARS_NIYAMI && (
+                {/* Photo Upload - Only for Boys, Girls get a symbolic icon */}
+                {selectedSection !== Section.BANAT_DARS_NIYAMI ? (
                   <div className="md:col-span-2 flex justify-center mb-6">
                     <div className="relative group">
                       <div className={cn(
@@ -240,6 +240,20 @@ export default function Admission() {
                         </button>
                       )}
                     </div>
+                  </div>
+                ) : (
+                  <div className="md:col-span-2 flex flex-col items-center justify-center p-6 bg-emerald-50 rounded-2xl border border-emerald-100 mb-6">
+                    <div className="w-24 h-32 bg-white rounded-xl border border-emerald-200 flex items-center justify-center mb-4 shadow-sm">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-16 h-16 text-emerald-900/30">
+                        <path d="M12 3c-4.5 0-7 3.5-7 8.5 0 2 1 4.5 2.5 6.5C8.5 19.5 10 21 12 21s3.5-1.5 4.5-3c1.5-2 2.5-4.5 2.5-6.5C19 6.5 16.5 3 12 3z" fill="currentColor" fillOpacity="0.1" />
+                        <path d="M8.5 8.5h7a1 1 0 011 1v1a1 1 0 01-1 1h-7a1 1 0 01-1-1v-1a1 1 0 011-1z" fill="white" />
+                        <circle cx="10.5" cy="10" r="0.5" fill="currentColor" />
+                        <circle cx="13.5" cy="10" r="0.5" fill="currentColor" />
+                        <path d="M5 21c0-2.5 2-4.5 4.5-4.5h5c2.5 0 4.5 2 4.5 4.5" />
+                      </svg>
+                    </div>
+                    <p className="text-emerald-900 font-bold">بنات کے آئی ڈی کارڈ کے لیے یہ نمونہ استعمال ہوگا</p>
+                    <p className="text-emerald-600 text-sm mt-1">لڑکیوں کی تصویر لینے کی ضرورت نہیں ہے</p>
                   </div>
                 )}
 

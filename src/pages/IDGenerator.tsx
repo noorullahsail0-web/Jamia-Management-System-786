@@ -7,6 +7,20 @@ import { Search, Loader2, User, Printer } from 'lucide-react';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
 
+const NiqabIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* Hijab/Outer Shape */}
+    <path d="M12 3c-4.5 0-7 3.5-7 8.5 0 2 1 4.5 2.5 6.5C8.5 19.5 10 21 12 21s3.5-1.5 4.5-3c1.5-2 2.5-4.5 2.5-6.5C19 6.5 16.5 3 12 3z" fill="currentColor" fillOpacity="0.1" />
+    {/* Eyes Opening Area */}
+    <path d="M8.5 8.5h7a1 1 0 011 1v1a1 1 0 01-1 1h-7a1 1 0 01-1-1v-1a1 1 0 011-1z" fill="white" />
+    {/* Eyes */}
+    <circle cx="10.5" cy="10" r="0.5" fill="currentColor" />
+    <circle cx="13.5" cy="10" r="0.5" fill="currentColor" />
+    {/* Lower Body */}
+    <path d="M5 21c0-2.5 2-4.5 4.5-4.5h5c2.5 0 4.5 2 4.5 4.5" />
+  </svg>
+);
+
 export default function IDGenerator() {
   const [section, setSection] = useState<Section | ''>('');
   const [currentClass, setCurrentClass] = useState('');
@@ -128,22 +142,22 @@ export default function IDGenerator() {
                       </div>
                     </div>
 
-                    {/* Image Placeholder & Class (Only for Boys) */}
-                    {student.section !== Section.BANAT_DARS_NIYAMI && (
-                      <div className="flex flex-col items-center gap-1 shrink-0 mt-1">
-                        <div className="w-20 h-24 border border-emerald-900 rounded bg-gray-50 flex items-center justify-center overflow-hidden">
-                          {student.photoUrl ? (
-                            <img src={student.photoUrl} alt="Student" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          ) : (
-                            <User className="w-8 h-8 text-gray-300" />
-                          )}
-                        </div>
-                        {/* Highlights Class/Darja under photo as requested */}
-                        <div className="w-20 bg-emerald-900 text-white text-[9px] py-0.5 rounded text-center font-bold">
-                          {student.currentClass}
-                        </div>
+                    {/* Image Placeholder & Class */}
+                    <div className="flex flex-col items-center gap-1 shrink-0 mt-1">
+                      <div className="w-20 h-24 border border-emerald-900 rounded bg-gray-50 flex items-center justify-center overflow-hidden">
+                        {student.section === Section.BANAT_DARS_NIYAMI ? (
+                          <NiqabIcon className="w-16 h-16 text-emerald-900/40" />
+                        ) : student.photoUrl ? (
+                          <img src={student.photoUrl} alt="Student" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <User className="w-8 h-8 text-gray-300" />
+                        )}
                       </div>
-                    )}
+                      {/* Highlights Class/Darja under photo */}
+                      <div className="w-20 bg-emerald-900 text-white text-[9px] py-0.5 rounded text-center font-bold">
+                        {student.currentClass}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Address Section */}

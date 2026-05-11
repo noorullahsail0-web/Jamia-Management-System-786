@@ -29,6 +29,10 @@ service cloud.firestore {
       return resource.data;
     }
 
+    match /test/connection {
+      allow read: if true;
+    }
+
     // Student Validation
     function isValidStudent(data) {
       return data.regNo is string && data.regNo.size() <= 100

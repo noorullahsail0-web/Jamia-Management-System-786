@@ -5,16 +5,21 @@ import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = firebaseConfig.firestoreDatabaseId 
+  ? getFirestore(app, firebaseConfig.firestoreDatabaseId) 
+  : getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
 async function testConnection() {
   try {
+    // Try to reach the public test collection
     await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
+    console.log("Firebase connection successful.");
+  } catch (error: any) {
+    console.error("Firebase connection test failed:", error);
+    if (error.code === 'unavailable') {
+      console.warn("Firestore is currently unavailable. This might be a network issue or the database ID/Project ID in firebase-applet-config.json is incorrect.");
     }
   }
 }

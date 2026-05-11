@@ -430,24 +430,24 @@ export default function Attendance() {
                     <h2 className="text-2xl font-bold" style={{ color: '#1f2937' }}>جامعہ تعلیم القرآن ناگمان ضلع پشاور</h2>
                     
                     <div className="flex justify-between items-center mt-8 px-4 text-lg">
-                      <div className="flex gap-8">
+                      <div className="flex gap-8" style={{ color: '#064e3b' }}>
                         <div>
-                          <span className="font-black">سیکشن:</span>
+                          <span className="font-black" style={{ color: '#064e3b' }}>سیکشن:</span>
                           <span className="mr-2 underline decoration-dotted" style={{ color: '#1f2937' }}>{section}</span>
                         </div>
                         <div>
-                          <span className="font-black">درجہ:</span>
+                          <span className="font-black" style={{ color: '#064e3b' }}>درجہ:</span>
                           <span className="mr-2 underline decoration-dotted" style={{ color: '#1f2937' }}>{currentClass}</span>
                         </div>
                         <div>
-                          <span className="font-black">کوڈ:</span>
+                          <span className="font-black" style={{ color: '#064e3b' }}>کوڈ:</span>
                           <span className="mr-2 underline decoration-dotted" style={{ color: '#1f2937' }}>
                             {SECTION_PREFIXES[section as Section]}{selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}
                           </span>
                         </div>
                       </div>
-                      <div>
-                        <span className="font-black text-xl">ماہ:</span>
+                      <div style={{ color: '#064e3b' }}>
+                        <span className="font-black text-xl" style={{ color: '#064e3b' }}>ماہ:</span>
                         <span className="mr-2 font-black text-xl underline decoration-double" style={{ color: '#1f2937' }}>{URDU_MONTHS[selectedMonth]} {selectedYear}</span>
                       </div>
                     </div>
