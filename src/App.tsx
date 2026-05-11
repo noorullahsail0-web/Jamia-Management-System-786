@@ -9,7 +9,8 @@ import {
   LogOut, 
   Menu, 
   X,
-  CreditCard
+  CreditCard,
+  BookCopy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -21,8 +22,9 @@ import Admission from './pages/Admission';
 import Attendance from './pages/Attendance';
 import Results from './pages/Results';
 import IDGenerator from './pages/IDGenerator';
+import DakhilKharij from './pages/DakhilKharij';
 
-type Tab = 'dashboard' | 'admission' | 'attendance' | 'results' | 'id-cards';
+type Tab = 'dashboard' | 'admission' | 'attendance' | 'results' | 'id-cards' | 'register';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -86,6 +88,7 @@ export default function App() {
     { id: 'attendance', label: 'حاضری سسٹم', icon: ClipboardCheck },
     { id: 'results', label: 'نتائج سسٹم', icon: GraduationCap },
     { id: 'id-cards', label: 'آئی ڈی کارڈز', icon: CreditCard },
+    { id: 'register', label: 'داخل خارج رجسٹر', icon: BookCopy },
   ];
 
   return (
@@ -200,6 +203,7 @@ export default function App() {
               {activeTab === 'attendance' && <Attendance />}
               {activeTab === 'results' && <Results />}
               {activeTab === 'id-cards' && <IDGenerator />}
+              {activeTab === 'register' && <DakhilKharij />}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -68,16 +68,7 @@ export default function Admission() {
 
     const serialStr = nextSerial.toString().padStart(2, '0');
     
-    if (section === Section.BANIN_DARS_NIYAMI) {
-      return `${prefix}${year}-${classCode}-${serialStr}`;
-    } else if (section === Section.BANIN_HIFZ) {
-      return `${prefix}${year}-${classCode}-${serialStr}`;
-    } else {
-      // BN: No dashes mentioned in description for serial, but maybe year/class? 
-      // User said: BN + 2026 + ClassCode + Serial (1,2,3... no padding?)
-      // We'll use 0-padding for consistency unless user objects.
-      return `${prefix}${year}${classCode}${nextSerial}`; 
-    }
+    return `${prefix}${year}-${classCode}-${serialStr}`;
   };
 
   const onSubmit = async (data: any) => {
@@ -153,13 +144,14 @@ export default function Admission() {
                 <th className="px-6 py-4 font-bold">ولدیت</th>
                 <th className="px-6 py-4 font-bold">درجہ</th>
                 <th className="px-6 py-4 font-bold">فون نمبر</th>
+                <th className="px-6 py-4 font-bold">کیفیت</th>
                 <th className="px-6 py-4 font-bold">ایکشن</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-gray-400 italic">کوئی ریکارڈ موجود نہیں</td>
+                  <td colSpan={7} className="px-6 py-10 text-center text-gray-400 italic">کوئی ریکارڈ موجود نہیں</td>
                 </tr>
               ) : (
                 students.map((student) => (
@@ -173,6 +165,14 @@ export default function Admission() {
                       </span>
                     </td>
                     <td className="px-6 py-4">{student.phone}</td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
+                        student.status === 'active' ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                      )}>
+                        {student.status === 'active' ? 'موجود' : 'خارج'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <button className="text-gray-400 hover:text-emerald-600 font-medium">تفصیلات</button>
                     </td>

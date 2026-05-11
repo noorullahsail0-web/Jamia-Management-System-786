@@ -6,6 +6,7 @@ import { CLASS_DATA } from '../constants';
 import { Search, Loader2, User, Printer } from 'lucide-react';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
+import schoolName from '../assets/school_name.png';
 
 const NiqabIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -38,7 +39,8 @@ export default function IDGenerator() {
       const q = query(
         collection(db, 'students'),
         where('section', '==', section),
-        where('currentClass', '==', currentClass)
+        where('currentClass', '==', currentClass),
+        where('status', '==', 'active')
       );
       const snapshot = await getDocs(q);
       setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student)));
@@ -114,11 +116,15 @@ export default function IDGenerator() {
                   className="w-[3.375in] h-[2.125in] border-2 border-emerald-900 rounded-xl overflow-hidden relative bg-white shadow-lg flex flex-col font-urdu text-[10px]"
                   style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
                 >
-                  {/* Card Header with Reg No */}
-                  <div className="bg-emerald-900 text-white flex items-center justify-between px-2 py-1 font-mono tracking-widest text-[12px] font-bold">
-                    <img src={logo} alt="Logo" className="w-5 h-5 object-contain bg-white rounded-full p-0.5" />
+                  {/* Card Header with Reg No, School Name and Logo */}
+                  <div className="bg-emerald-900 text-white flex items-center justify-between px-2 py-1 font-mono tracking-widest text-[10px] font-bold">
                     <span>{student.regNo}</span>
-                    <div className="w-5" /> {/* Spacer */}
+                    <img 
+                      src={schoolName} 
+                      alt="جامعہ تعلیم القرآن" 
+                      className="h-5 object-contain px-2 brightness-0 invert" 
+                    />
+                    <img src={logo} alt="Logo" className="w-5 h-5 object-contain bg-white rounded-full p-0.5" />
                   </div>
 
                   <div className="flex flex-1 p-2 gap-2 overflow-hidden">

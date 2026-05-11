@@ -25,6 +25,9 @@ export interface Student {
   address: string;
   photoUrl?: string;
   status: 'active' | 'left' | 'graduated';
+  leavingDate?: string;
+  leavingReason?: string;
+  leavingClass?: string;
   createdAt: string;
 }
 
