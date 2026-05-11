@@ -1,26 +1,31 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = firebaseConfig.firestoreDatabaseId 
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId) 
-  : getFirestore(app);
+
+// Initialize Firestore with long polling to bypass potential proxy/socket issues
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId || '(default)');
+
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
+// Simple connection check without blocking
 async function testConnection() {
   try {
-    // Try to reach the public test collection
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log("Firebase connection successful.");
+    // We use getDocFromServer to bypass cache and check real connectivity
+    const testDoc = doc(db, '_connection_test_', 'ping');
+    await Promise.race([
+      getDocFromServer(testDoc),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000))
+    ]);
+    console.log("Firebase connection established.");
   } catch (error: any) {
-    console.error("Firebase connection test failed:", error);
-    if (error.code === 'unavailable') {
-      console.warn("Firestore is currently unavailable. This might be a network issue or the database ID/Project ID in firebase-applet-config.json is incorrect.");
-    }
+    console.warn("Firestore connection check failed (might be expected on first run):", error.message);
   }
 }
 

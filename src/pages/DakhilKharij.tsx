@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   collection, 
   query, 
@@ -17,11 +17,18 @@ import {
   UserCheck,
   Calendar,
   FileText,
-  AlertCircle
+  AlertCircle,
+  FileSpreadsheet,
+  FileJson,
+  X,
+  Loader2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
-import logo from '../assets/logo.png';
+import schoolName from '../assets/school_name.png';
+import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 export default function DakhilKharij() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -29,6 +36,7 @@ export default function DakhilKharij() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState<Section | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'left'>('all');
+  const printRef = useRef<HTMLDivElement>(null);
   
   // Withdrawal Modal State
   const [withdrawingStudent, setWithdrawingStudent] = useState<Student | null>(null);
@@ -36,6 +44,7 @@ export default function DakhilKharij() {
   const [leavingReason, setLeavingReason] = useState('');
   const [leavingClass, setLeavingClass] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -44,9 +53,18 @@ export default function DakhilKharij() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const q = query(collection(db, 'students'), orderBy('admissionDate', 'desc'));
+      // Fetch all documents first to ensure none are skipped due to missing sort fields
+      const q = query(collection(db, 'students'));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+      
+      // Sort in-memory by admissionDate or createdAt
+      data.sort((a, b) => {
+        const dateA = a.admissionDate || a.createdAt || '';
+        const dateB = b.admissionDate || b.createdAt || '';
+        return dateB.localeCompare(dateA);
+      });
+      
       setStudents(data);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -88,15 +106,126 @@ export default function DakhilKharij() {
   };
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name.includes(searchTerm) || s.regNo.includes(searchTerm);
+    const search = searchTerm.toLowerCase();
+    const name = (s.name || '').toLowerCase();
+    const regNo = (s.regNo || '').toLowerCase();
+    const fatherName = (s.fatherName || '').toLowerCase();
+
+    const matchesSearch = name.includes(search) || regNo.includes(search) || fatherName.includes(search);
     const matchesSection = selectedSection === 'all' || s.section === selectedSection;
     const matchesStatus = selectedStatus === 'all' || s.status === selectedStatus;
     return matchesSearch && matchesSection && matchesStatus;
   });
 
+  const downloadPDF = async () => {
+    if (!printRef.current) return;
+    
+    try {
+      setDownloadingPDF(true);
+      const doc = new jsPDF('l', 'mm', 'a4');
+      const pages = printRef.current.querySelectorAll('.print-page');
+      
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i] as HTMLElement;
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          onclone: (clonedDoc) => {
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap');
+              * {
+                color: #000000 !important;
+                border-color: #000000 !important;
+                --tw-shadow: none !important;
+                --tw-shadow-colored: none !important;
+                --tw-ring-color: transparent !important;
+                --tw-ring-shadow: none !important;
+                --tw-ring-offset-shadow: none !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                background-image: none !important;
+              }
+              .bg-emerald-900 {
+                background-color: #104d38 !important;
+                color: #ffffff !important;
+              }
+              .bg-white, .bg-gray-50, .bg-gray-50\\/50 {
+                background-color: #ffffff !important;
+              }
+              .text-white {
+                color: #ffffff !important;
+              }
+              .text-emerald-700 {
+                color: #047857 !important;
+              }
+              .text-red-700 {
+                color: #b91c1c !important;
+              }
+              .font-urdu {
+                font-family: 'Noto Nastaliq Urdu', serif !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(imgData);
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        if (i > 0) doc.addPage();
+        doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      }
+      
+      doc.save(`Dakhil_Kharij_Register_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert('پی ڈی ایف بنانے میں غلطی ہوئی۔ براہ کرم دوبارہ کوشش کریں یا پرنٹ بٹن استعمال کریں۔');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
+
+  const downloadExcel = () => {
+    const data = filteredStudents.map(s => ({
+      'داخلہ نمبر': s.regNo,
+      'تاریخ داخلہ': s.admissionDate,
+      'نام طالب علم': s.name,
+      'ولدیت': s.fatherName,
+      'تاریخ پیدائش': s.dob,
+      'سکونت': s.address,
+      'جماعت (داخلہ)': s.currentClass,
+      'جماعت (اخراج)': s.leavingClass || '-',
+      'تاریخ اخراج': s.leavingDate || '-',
+      'وجہ اخراج': s.leavingReason || '-',
+      'کیفیت': s.status === 'active' ? 'موجود' : s.status === 'left' ? 'خارج' : 'فارغ'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dakhil Kharij");
+    XLSX.writeFile(wb, `Dakhil_Kharij_Register_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
+  // Pagination for printing: 15 rows per page
+  const rowsPerPage = 15;
+  const paginatedStudents = [];
+  for (let i = 0; i < filteredStudents.length; i += rowsPerPage) {
+    paginatedStudents.push(filteredStudents.slice(i, i + rowsPerPage));
+  }
+
+  // If no students match filters but we are ready, still show an empty page
+  if (paginatedStudents.length === 0 && !loading) {
+    paginatedStudents.push([]);
+  }
 
   return (
     <div className="space-y-8 font-urdu" dir="rtl">
@@ -105,13 +234,28 @@ export default function DakhilKharij() {
           <h1 className="text-3xl font-bold text-gray-900">رجسٹر داخل / خارج</h1>
           <p className="text-gray-500 mt-1">جامعہ کے تمام طلباء کا مکمل ریکارڈ</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={downloadExcel}
+            className="flex items-center gap-2 bg-white border border-emerald-200 px-4 py-2 rounded-xl text-emerald-700 hover:bg-emerald-50 transition-all font-bold shadow-sm"
+          >
+            <FileSpreadsheet className="w-5 h-5" />
+            ایکسل ڈاؤن لوڈ
+          </button>
+          <button
+            onClick={downloadPDF}
+            disabled={downloadingPDF}
+            className="flex items-center gap-2 bg-white border border-red-200 px-4 py-2 rounded-xl text-red-700 hover:bg-red-50 transition-all font-bold shadow-sm disabled:opacity-50"
+          >
+            {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileJson className="w-5 h-5" />}
+            پی ڈی ایف ڈاؤن لوڈ
+          </button>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl text-gray-700 hover:bg-gray-50 transition-all font-bold shadow-sm"
+            className="flex items-center gap-2 bg-emerald-900 text-white px-6 py-2 rounded-xl hover:bg-emerald-800 transition-all font-bold shadow-lg shadow-emerald-200"
           >
             <Printer className="w-5 h-5" />
-            پرنٹ کریں
+            پرنٹ کریں (A4)
           </button>
         </div>
       </div>
@@ -178,77 +322,65 @@ export default function DakhilKharij() {
           <option value="active">صرف موجودہ طلباء</option>
           <option value="left">صرف خارج شدہ طلباء</option>
         </select>
+        <div className="flex items-center px-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-sm">
+          کل طلبہ: {filteredStudents.length} / {students.length}
+        </div>
       </div>
 
-      {/* Register Table Container */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden print:shadow-none print:border-none">
+      {/* Screen View Table - Visible to user */}
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden no-print">
         <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse print:table">
+          <table className="w-full text-right border-collapse">
             <thead>
-              <tr className="bg-emerald-900 text-white print:bg-gray-100 print:text-black">
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold w-20">داخلہ نمبر</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold w-28">تاریخ داخلہ</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">نام طالب علم</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">ولدیت</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">تاریخ پیدائش</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">سکونت (پتہ)</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">درجہ (داخلہ)</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">درجہ (اخراج)</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">تاریخ اخراج</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">وجہ اخراج</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold">کیفیت</th>
-                <th className="px-4 py-3 border border-emerald-800 print:border-gray-300 text-sm font-bold no-print">ایکشن</th>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-4 py-4 text-sm font-bold text-gray-600">داخلہ نمبر</th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-600">نام طالب علم</th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-600">ولدیت</th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-600">سیکشن</th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-600">جماعت</th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-600">درجہ</th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-600 text-center">حالت</th>
+                <th className="px-4 py-4 text-sm font-bold text-gray-600 text-center">ایکشن</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={12} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-emerald-600" />
                     ڈیٹا لوڈ ہو رہا ہے...
                   </td>
                 </tr>
               ) : filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     کوئی طالب علم نہیں ملا۔
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map((s, idx) => (
-                  <tr key={s.id} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50">
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm font-mono text-center">{s.regNo}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm text-center">{s.admissionDate}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm font-bold">{s.name}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm">{s.fatherName}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm text-center">{s.dob}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm truncate max-w-[150px]">{s.address}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm text-center">{s.currentClass}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm text-center">{s.leavingClass || '-'}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm text-center">{s.leavingDate || '-'}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm">{s.leavingReason || '-'}</td>
-                    <td className="px-4 py-3 border border-gray-100 print:border-gray-300 text-sm">
+                filteredStudents.map((s) => (
+                  <tr key={s.id} className="hover:bg-emerald-50/30 transition-colors">
+                    <td className="px-4 py-4 text-sm font-mono font-bold text-emerald-700">{s.regNo}</td>
+                    <td className="px-4 py-4 text-sm font-bold text-gray-900">{s.name}</td>
+                    <td className="px-4 py-4 text-sm text-gray-600">{s.fatherName}</td>
+                    <td className="px-4 py-4 text-sm text-gray-600">{s.section}</td>
+                    <td className="px-4 py-4 text-sm text-gray-600">{s.currentClass}</td>
+                    <td className="px-4 py-4 text-sm text-gray-600">{s.grade || '-'}</td>
+                    <td className="px-4 py-4 text-sm text-center">
                       <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
-                        s.status === 'active' ? "bg-emerald-100 text-emerald-700" : 
-                        s.status === 'left' ? "bg-red-100 text-red-700" :
-                        "bg-blue-100 text-blue-700"
+                        "px-3 py-1 rounded-full text-xs font-bold",
+                        s.status === 'active' ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
                       )}>
-                        {s.status === 'active' ? 'موجود' : s.status === 'left' ? 'خارج' : 'فارغ'}
+                        {s.status === 'active' ? 'موجود' : 'خارج'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border border-gray-100 no-print text-center">
+                    <td className="px-4 py-4 text-sm text-center">
                       {s.status === 'active' && (
                         <button
-                          onClick={() => {
-                            setWithdrawingStudent(s);
-                            setLeavingClass(s.currentClass);
-                          }}
-                          className="p-1 px-2 text-red-600 hover:bg-red-50 rounded-lg transition-all text-xs flex items-center gap-1 mx-auto border border-red-100"
-                          title="اخراج درج کریں"
+                          onClick={() => setWithdrawingStudent(s)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors title='خارج کریں'"
                         >
-                          <UserMinus className="w-3 h-3" />
-                          اخراج
+                          <UserMinus className="w-5 h-5" />
                         </button>
                       )}
                     </td>
@@ -259,6 +391,165 @@ export default function DakhilKharij() {
           </table>
         </div>
       </div>
+
+      {/* Register Table Container - Paginated for Print - Hidden on screen */}
+      <div className="print-register-pages-container" ref={printRef}>
+        {paginatedStudents.map((pageStudents, pageIdx) => (
+          <div key={pageIdx} className="print-page bg-white shadow-sm border border-gray-100 overflow-hidden print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page min-h-[700px] print:min-h-0 page-container-screen">
+            {/* Header for each printed page */}
+            <div className="hidden print-header-active flex flex-col items-center justify-center mb-6 pt-4">
+              <h1 className="text-2xl font-bold text-gray-900 underline underline-offset-8">رجسٹر داخل / خارج</h1>
+              <div className="mt-4 flex flex-col items-center gap-1">
+                <p className="text-sm font-bold text-gray-600">الحاق نمبر: 06838</p>
+                <img src={schoolName} alt="جامعہ تعلیم القرآن ناگمان پشاور" className="h-10 object-contain" crossOrigin="anonymous" />
+                <p className="text-[10px] font-bold text-gray-600">شبقدر روڈ نزد مشتاق فلور ملز ناگمان ضلع پشاور</p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="w-full text-right border-collapse print:table table-fixed">
+                <thead>
+                  <tr className="bg-emerald-900 text-white print:bg-gray-100 print:text-black h-12">
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[7%] text-center">داخلہ نمبر</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[9%] text-center">تاریخ داخلہ</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[13%]">نام طالب علم</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[11%]">ولدیت</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[9%] text-center">تاریخ پیدائش</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[14%]">سکونت</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[8%] text-center">جماعت (داخل)</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[8%] text-center">جماعت (چھوڑا)</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[8%] text-center">تاریخ اخراج</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[8%]">وجہ اخراج</th>
+                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[10px] font-bold w-[5%] text-center">کیفیت</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={11} className="px-6 py-12 text-center text-gray-500">
+                        ڈیٹا لوڈ ہو رہا ہے...
+                      </td>
+                    </tr>
+                  ) : pageStudents.length === 0 ? (
+                    // Fill 15 rows for empty state
+                    Array.from({ length: 15 }).map((_, i) => (
+                      <tr key={`empty-${i}`} className="h-10">
+                        {Array.from({ length: 11 }).map((_, j) => (
+                          <td key={`cell-${i}-${j}`} className="border border-gray-200 print:border-gray-600"></td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : (
+                    <>
+                      {pageStudents.map((s) => (
+                        <tr key={s.id} className="hover:bg-gray-50 transition-colors h-10 even:bg-gray-50/50">
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] font-mono text-center truncate">{s.regNo}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] text-center">{s.admissionDate}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] font-bold truncate">{s.name}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] truncate">{s.fatherName}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] text-center">{s.dob}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] truncate">{s.address}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] text-center">{s.currentClass}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] text-center">{s.leavingClass || '-'}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] text-center">{s.leavingDate || '-'}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] truncate">{s.leavingReason || '-'}</td>
+                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[9px] text-center">
+                            <span className={cn(
+                              "font-bold",
+                              s.status === 'active' ? "text-emerald-700" : "text-red-700"
+                            )}>
+                              {s.status === 'active' ? 'موجود' : 'خارج'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {/* Fill the rest of 15 rows with empty rows for consistent layout */}
+                      {pageStudents.length < rowsPerPage && Array.from({ length: rowsPerPage - pageStudents.length }).map((_, i) => (
+                        <tr key={`extra-${i}`} className="h-10">
+                          {Array.from({ length: 11 }).map((_, j) => (
+                            <td key={`ecell-${i}-${j}`} className="border border-gray-100 print:border-gray-600"></td>
+                          ))}
+                        </tr>
+                      ))}
+                    </>
+                  )}
+                </tbody>
+              </table>
+              
+              {/* Signatures for print */}
+              <div className="hidden print:flex justify-between mt-6 px-8 pb-4">
+                <p className="text-[10px] font-bold">دستخط مہتمم / ناظم تعلیمات: .................................</p>
+                <p className="text-[10px] font-bold">مہر مدرسہ: .................................</p>
+                <p className="text-[10px] font-bold">تاریخ: {format(new Date(), 'dd-MM-yyyy')}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Row Selection actions - only visible on screen */}
+      <div className="no-print mt-4 flex justify-center gap-2">
+        <p className="text-sm text-gray-500">مجموعی صفحات برائے پرنٹ: {paginatedStudents.length}</p>
+      </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media screen {
+          .print-page {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 297mm;
+            min-height: 210mm;
+            color: #000000 !important;
+            background: #ffffff !important;
+          }
+          /* Comprehensive fix for html2canvas oklch error by stripping Tailwind 4 variables */
+          .print-page, .print-page * {
+            border-color: #000000 !important;
+            color: #000000 !important;
+            background-color: transparent !important;
+            --tw-ring-color: transparent !important;
+            --tw-ring-offset-shadow: 0 0 #0000 !important;
+            --tw-ring-shadow: 0 0 #0000 !important;
+            --tw-shadow: 0 0 #0000 !important;
+            --tw-shadow-colored: 0 0 #0000 !important;
+            --tw-outline-style: none !important;
+            box-shadow: none !important;
+          }
+          .print-page .bg-emerald-900 {
+            background-color: #104d38 !important;
+            color: #ffffff !important;
+          }
+          .print-page .bg-white {
+            background-color: #ffffff !important;
+          }
+          .print-header-active {
+            display: flex !important;
+          }
+        }
+        @media print {
+          @page { 
+            size: A4 landscape; 
+            margin: 0.5cm; 
+          }
+          body { background: white !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+          .no-print { display: none !important; }
+          .print-page { 
+            position: static !important;
+            display: block !important; 
+            width: 100% !important;
+            margin: 0 0 1cm 0 !important;
+            padding: 0 !important;
+            page-break-after: always !important;
+          }
+          .page-container-screen { border: none !important; }
+          table { width: 100% !important; border-collapse: collapse !important; border: 1.5px solid #000 !important; table-layout: fixed !important; }
+          th, td { border: 1px solid #000 !important; padding: 1px 2px !important; line-height: 1 !important; height: 35px !important; }
+          th { background-color: #f3f4f6 !important; color: black !important; }
+          h1, p, img { text-align: center; }
+          .print-header-active { display: flex !important; }
+        }
+      `}} />
 
       {/* Withdrawal Modal */}
       {withdrawingStudent && (
@@ -362,70 +653,6 @@ export default function DakhilKharij() {
           </div>
         </div>
       )}
-
-      {/* Print-specific Header */}
-      <div className="hidden print:block mb-8 border-b-2 border-emerald-900 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <img src={logo} alt="Logo" className="w-16 h-16 object-contain" />
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-emerald-900">رجسٹر داخل / خارج</h1>
-            <p className="text-lg font-bold text-gray-700 mt-1">جامعہ تعلیم القرآن</p>
-          </div>
-          <div className="w-16" /> {/* Spacer */}
-        </div>
-        <div className="text-center border-t border-gray-200 pt-2 text-sm text-gray-500">
-          رپورٹ تیار کردہ: {format(new Date(), 'dd MMMM yyyy')}
-        </div>
-      </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          body { background: white !important; }
-          .no-print { display: none !important; }
-          table { width: 100% !important; border-collapse: collapse !important; }
-          th, td { border: 1px solid #999 !important; font-size: 8px !important; padding: 4px !important; }
-          @page { size: landscape; margin: 1cm; }
-        }
-      `}} />
     </div>
-  );
-}
-
-function Loader2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
-  );
-}
-
-function X(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
   );
 }

@@ -28,11 +28,23 @@ export default function Admission() {
 
   const fetchStudents = async () => {
     try {
-      const q = query(collection(db, 'students'), orderBy('createdAt', 'desc'));
+      setLoading(true);
+      const q = query(collection(db, 'students'));
       const snapshot = await getDocs(q);
-      setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student)));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+      
+      // Sort in-memory: newest first
+      data.sort((a, b) => {
+        const dateA = a.createdAt || '';
+        const dateB = b.createdAt || '';
+        return dateB.localeCompare(dateA);
+      });
+      
+      setStudents(data);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
