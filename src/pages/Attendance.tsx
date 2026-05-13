@@ -53,7 +53,7 @@ export default function Attendance() {
       };
 
       days.forEach(day => {
-        const record = monthlyData.find(r => r.studentId === student.id && isSameDay(new Date(r.date), day));
+        const record = monthlyData.find(r => r.studentId === student.id && r.date === format(day, 'yyyy-MM-dd'));
         const status = record?.status;
         if (status === 'present') presentCount++;
         row[format(day, 'd')] = status === 'present' ? 'P' : status === 'absent' ? 'A' : status === 'leave' ? 'L' : '-';
@@ -76,9 +76,36 @@ export default function Attendance() {
     try {
       const element = printRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 4,
         useCORS: true,
         logging: false,
+          onclone: (clonedDoc) => {
+            const elements = clonedDoc.getElementsByTagName('*');
+            for (let i = 0; i < elements.length; i++) {
+              const el = elements[i] as HTMLElement;
+              
+              // Strip problematic Tailwind 4 variables and styles that html2canvas cannot parse
+              el.style.color = '#000000';
+              el.style.backgroundColor = 'transparent';
+              el.style.borderColor = '#000000';
+              el.style.boxShadow = 'none';
+              el.style.textShadow = 'none';
+              el.style.backgroundImage = 'none';
+              
+              // Re-apply specific colors using hex
+              if (el.tagName === 'TH' || el.classList.contains('text-white')) {
+                el.style.color = '#ffffff';
+              } else if (el.classList.contains('text-emerald-700')) {
+                el.style.color = '#047857';
+              }
+              
+              if (el.tagName === 'TH' || el.classList.contains('bg-emerald-600')) {
+                el.style.backgroundColor = '#104d38';
+              } else if (el.classList.contains('bg-white')) {
+                el.style.backgroundColor = '#ffffff';
+              }
+            }
+          }
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -310,20 +337,20 @@ export default function Attendance() {
               <table className="w-full text-right">
                 <thead>
                   <tr className="bg-emerald-950 text-white">
-                    <th className="px-8 py-5 font-black text-lg">طالب علم</th>
-                    <th className="px-8 py-5 font-black text-lg text-center">حاضری کی صورتحال</th>
-                    <th className="px-8 py-5 font-black text-lg">اطلاع (WhatsApp)</th>
+                    <th className="px-4 md:px-8 py-5 font-black text-lg text-right">طالب علم</th>
+                    <th className="px-4 md:px-8 py-5 font-black text-lg text-center">حاضری</th>
+                    <th className="px-4 md:px-8 py-5 font-black text-lg text-right">اطلاع</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {students.map((student) => (
                     <tr key={student.id} className="hover:bg-emerald-50/30 transition-colors">
-                      <td className="px-8 py-5">
-                        <p className="font-black text-emerald-950 text-lg">{student.name}</p>
-                        <p className="text-sm font-bold text-gray-500">{student.fatherName} • {student.regNo}</p>
+                      <td className="px-4 md:px-8 py-5">
+                        <p className="font-black text-emerald-950 text-base md:text-lg">{student.name}</p>
+                        <p className="text-[10px] md:text-sm font-bold text-gray-500">{student.fatherName} • {student.regNo}</p>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className="flex justify-center items-center gap-3">
+                      <td className="px-2 md:px-8 py-5">
+                        <div className="flex justify-center items-center gap-1 md:gap-3">
                           {[
                             { val: 'present', label: 'حاضر', icon: UserCheck, color: 'text-emerald-600', active: 'bg-emerald-600 text-white shadow-emerald-200' },
                             { val: 'absent', label: 'غیر حاضر', icon: UserX, color: 'text-red-600', active: 'bg-red-600 text-white shadow-red-200' },
@@ -333,28 +360,28 @@ export default function Attendance() {
                               key={btn.val}
                               onClick={() => handleStatusChange(student.id, btn.val as any)}
                               className={cn(
-                                "flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all w-28 border-2 border-transparent",
+                                "flex flex-col items-center gap-1 p-2 md:p-3 rounded-xl md:rounded-2xl transition-all w-16 md:w-28 border-2 border-transparent",
                                 attendanceMap[student.id] === btn.val 
                                   ? `${btn.active} shadow-lg scale-105` 
-                                  : "text-gray-400 hover:bg-gray-100 hover:border-gray-200"
+                                  : "text-gray-400 hover:bg-gray-100 hover:border-gray-200 text-[10px] md:text-xs"
                               )}
                             >
-                              <btn.icon className="w-6 h-6" />
-                              <span className="text-xs font-black uppercase">{btn.label}</span>
+                              <btn.icon className="w-4 h-4 md:w-6 md:h-6" />
+                              <span className="text-[9px] md:text-xs font-black uppercase whitespace-nowrap">{btn.label}</span>
                             </button>
                           ))}
                         </div>
                       </td>
-                      <td className="px-8 py-5">
+                      <td className="px-4 md:px-8 py-5">
                         {attendanceMap[student.id] !== 'present' && (
                           <a 
                             href={getWhatsAppLink(student, attendanceMap[student.id] as 'absent' | 'leave')}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-3 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-5 py-3 rounded-xl transition-all font-black text-sm w-fit group"
+                            className="flex items-center gap-2 md:gap-3 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 md:px-5 py-2 md:py-3 rounded-xl transition-all font-black text-[10px] md:text-sm w-fit group"
                           >
-                            <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                            <span>اطلاع بھیجیں</span>
+                            <Send className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                            <span className="hidden sm:inline">اطلاع بھیجیں</span>
                           </a>
                         )}
                       </td>
@@ -364,30 +391,30 @@ export default function Attendance() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
-              <div className="flex items-center gap-6">
+            <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 md:p-6 rounded-3xl shadow-lg border border-gray-100 gap-6">
+              <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-around md:justify-start">
                 <div className="text-right">
-                  <p className="text-xs font-bold text-gray-500">کل طلباء</p>
-                  <p className="text-xl font-black text-emerald-950">{students.length}</p>
+                  <p className="text-[10px] md:text-xs font-bold text-gray-500">کل طلباء</p>
+                  <p className="text-lg md:text-xl font-black text-emerald-950">{students.length}</p>
                 </div>
                 <div className="w-px h-8 bg-gray-200" />
                 <div className="text-right">
-                  <p className="text-xs font-bold text-emerald-500">حاضر</p>
-                  <p className="text-xl font-black text-emerald-600">{Object.values(attendanceMap).filter(v => v === 'present').length}</p>
+                  <p className="text-[10px] md:text-xs font-bold text-emerald-500">حاضر</p>
+                  <p className="text-lg md:text-xl font-black text-emerald-600">{Object.values(attendanceMap).filter(v => v === 'present').length}</p>
                 </div>
                 <div className="w-px h-8 bg-gray-200" />
                 <div className="text-right">
-                  <p className="text-xs font-bold text-red-500">غیر حاضر</p>
-                  <p className="text-xl font-black text-red-600">{Object.values(attendanceMap).filter(v => v === 'absent').length}</p>
+                  <p className="text-[10px] md:text-xs font-bold text-red-500">غیر حاضر</p>
+                  <p className="text-lg md:text-xl font-black text-red-600">{Object.values(attendanceMap).filter(v => v === 'absent').length}</p>
                 </div>
               </div>
               <button
                 onClick={saveAttendance}
                 disabled={saving}
-                className="flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-black py-5 px-14 rounded-2xl shadow-xl shadow-emerald-200 border-none transition-all active:scale-95 group"
+                className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-black py-4 md:py-5 px-8 md:px-14 rounded-2xl shadow-xl shadow-emerald-200 border-none transition-all active:scale-95 group w-full md:w-auto"
               >
                 {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />}
-                <span className="text-lg">{savedSuccess ? 'حاضری محفوظ ہوگئی!' : 'حاضری محفوظ کریں'}</span>
+                <span className="text-base md:text-lg">{savedSuccess ? 'حاضری محفوظ ہوگئی!' : 'حاضری محفوظ کریں'}</span>
               </button>
             </div>
           </div>
@@ -425,11 +452,11 @@ export default function Attendance() {
               >
                 <div>
                   {/* Register Header */}
-                  <div className="text-center mb-8 pb-6" style={{ borderBottom: '4px double #064e3b' }}>
-                    <h1 className="text-4xl font-black mb-2" style={{ color: '#064e3b' }}>حاضری رجسٹر</h1>
-                    <h2 className="text-2xl font-bold" style={{ color: '#1f2937' }}>جامعہ تعلیم القرآن ناگمان ضلع پشاور</h2>
+                  <div className="text-center mb-2 pb-1" style={{ borderBottom: '1.5px solid #064e3b' }}>
+                    <h1 className="text-2xl font-black mb-0.5" style={{ color: '#064e3b' }}>حاضری رجسٹر</h1>
+                    <h2 className="text-lg font-bold" style={{ color: '#1f2937' }}>جامعہ تعلیم القرآن ناگمان ضلع پشاور</h2>
                     
-                    <div className="flex justify-between items-center mt-8 px-4 text-lg">
+                    <div className="flex justify-between items-center mt-2 px-4 text-sm">
                       <div className="flex gap-8" style={{ color: '#064e3b' }}>
                         <div>
                           <span className="font-black" style={{ color: '#064e3b' }}>سیکشن:</span>
@@ -454,11 +481,11 @@ export default function Attendance() {
                   </div>
 
                   {/* Attendance Table */}
-                  <table className="w-full border-collapse border-2 text-[10px]" style={{ borderColor: '#064e3b' }}>
+                  <table className="w-full border-collapse border text-[9px]" style={{ borderColor: '#064e3b' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#ecfdf5' }}>
-                        <th className="border-2 p-1 w-10 text-center font-black" style={{ borderColor: '#064e3b', color: '#064e3b' }}>نمبر شمار</th>
-                        <th className="border-2 p-1 w-48 text-right font-black pr-4" style={{ borderColor: '#064e3b', color: '#064e3b' }}>نام طالب علم</th>
+                        <th className="border p-1 w-10 text-center font-black" style={{ borderColor: '#064e3b', color: '#064e3b' }}>نمبر شمار</th>
+                        <th className="border p-1 w-48 text-right font-black pr-4" style={{ borderColor: '#064e3b', color: '#064e3b' }}>نام طالب علم</th>
                         {eachDayOfInterval({
                           start: startOfMonth(new Date(selectedYear, selectedMonth)),
                           end: endOfMonth(new Date(selectedYear, selectedMonth))
@@ -484,7 +511,7 @@ export default function Attendance() {
                             <td className="border text-center font-bold" style={{ borderColor: '#064e3b', color: '#1f2937' }}>{index + 1}</td>
                             <td className="border pr-4 font-bold text-[11px]" style={{ borderColor: '#064e3b', color: '#1f2937' }}>{student.name}</td>
                             {days.map((day, i) => {
-                              const record = monthlyData.find(r => r.studentId === student.id && isSameDay(new Date(r.date), day));
+                              const record = monthlyData.find(r => r.studentId === student.id && r.date === format(day, 'yyyy-MM-dd'));
                               const status = record?.status;
                               if (status === 'present') presentCount++;
                               

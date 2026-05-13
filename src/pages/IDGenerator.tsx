@@ -3,10 +3,14 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Section, Student } from '../types';
 import { CLASS_DATA } from '../constants';
-import { Search, Loader2, User, Printer } from 'lucide-react';
+import { Search, Loader2, User, Printer, FileDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import logo from '../assets/logo.png';
 import schoolName from '../assets/school_name.png';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, TextRun } from 'docx';
+import { saveAs } from 'file-saver';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const NiqabIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -27,9 +31,120 @@ export default function IDGenerator() {
   const [currentClass, setCurrentClass] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const cardsRef = React.useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const downloadPDF = async () => {
+    if (!cardsRef.current || students.length === 0) return;
+    setDownloadingPDF(true);
+    try {
+      const canvas = await html2canvas(cardsRef.current, {
+        scale: 4,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+          onclone: (clonedDoc) => {
+            const elements = clonedDoc.getElementsByTagName('*');
+            for (let i = 0; i < elements.length; i++) {
+              const el = elements[i] as HTMLElement;
+              
+              // Strip problematic Tailwind 4 variables and styles that html2canvas cannot parse
+              el.style.color = '#000000';
+              el.style.backgroundColor = 'transparent';
+              el.style.borderColor = '#000000';
+              el.style.boxShadow = 'none';
+              el.style.textShadow = 'none';
+              el.style.backgroundImage = 'none';
+              
+              // Re-apply specific colors using hex
+              if (el.tagName === 'TH' || el.classList.contains('text-white')) {
+                el.style.color = '#ffffff';
+              } else if (el.classList.contains('text-emerald-700')) {
+                el.style.color = '#047857';
+              }
+              
+              if (el.tagName === 'TH' || el.classList.contains('bg-emerald-900')) {
+                el.style.backgroundColor = '#104d38';
+              } else if (el.classList.contains('bg-white')) {
+                el.style.backgroundColor = '#ffffff';
+              }
+            }
+          }
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`ID_Cards_${currentClass}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert('پی ڈی ایف ڈاؤن لوڈ کرنے میں غلطی ہوئی۔');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
+  const downloadWord = async () => {
+    if (students.length === 0) return;
+
+    const rows = [];
+    // Create card-like rows for Word
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+      rows.push(
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: student.regNo, bold: true, color: "104d38" })],
+                  alignment: AlignmentType.CENTER,
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `Name: ${student.name}`, bold: true })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `Father: ${student.fatherName}` })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `Class: ${student.currentClass}`, bold: true })],
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `Address: ${student.address}`, size: 16 })],
+                }),
+              ],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              margins: { top: 100, bottom: 100, left: 100, right: 100 },
+            }),
+          ],
+        })
+      );
+    }
+
+    const table = new Table({
+      rows: rows,
+      width: { size: 100, type: WidthType.PERCENTAGE },
+    });
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: "ID Cards Recod", bold: true, size: 32 })],
+            alignment: AlignmentType.CENTER,
+          }),
+          table
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `ID_Cards_${currentClass}.docx`);
   };
 
   const fetchStudents = async () => {
@@ -58,14 +173,32 @@ export default function IDGenerator() {
           <h1 className="text-2xl font-bold text-gray-900">آئی ڈی کارڈ جنریٹر</h1>
           <p className="text-gray-500">طلباء کے شناختی کارڈز تیار کریں اور پرنٹ کریں</p>
         </div>
-        <button
-          onClick={() => handlePrint()}
-          disabled={students.length === 0}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white px-6 py-3 rounded-xl transition-all shadow-md font-bold"
-        >
-          <Printer className="w-5 h-5" />
-          <span>تمام کارڈز پرنٹ کریں</span>
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => downloadPDF()}
+            disabled={students.length === 0 || downloadingPDF}
+            className="flex items-center gap-2 bg-white border border-red-200 text-red-700 px-6 py-3 rounded-xl transition-all shadow-sm font-bold hover:bg-red-50"
+          >
+            {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
+            <span>پی ڈی ایف ڈاؤن لوڈ</span>
+          </button>
+          <button
+            onClick={() => downloadWord()}
+            disabled={students.length === 0}
+            className="flex items-center gap-2 bg-white border border-emerald-200 text-emerald-700 px-6 py-3 rounded-xl transition-all shadow-sm font-bold hover:bg-emerald-50"
+          >
+            <FileDown className="w-5 h-5" />
+            <span>Word فائل ڈاؤن لوڈ</span>
+          </button>
+          <button
+            onClick={() => handlePrint()}
+            disabled={students.length === 0}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white px-6 py-3 rounded-xl transition-all shadow-md font-bold"
+          >
+            <Printer className="w-5 h-5" />
+            <span>تمام کارڈز پرنٹ کریں</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-end gap-6">
@@ -106,7 +239,10 @@ export default function IDGenerator() {
             <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center bg-white p-8 rounded-3xl min-w-[350px] print-only-cards">
+          <div 
+            ref={cardsRef}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center bg-white p-8 rounded-3xl min-w-[350px] print-only-cards"
+          >
             {students.length === 0 ? (
               <p className="text-gray-400 italic">کوئی ریکارڈ منتخب نہیں کیا گیا</p>
             ) : (

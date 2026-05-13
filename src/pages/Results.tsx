@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { Section, Student, ExamResult, ExamType } from '../types';
 import { CLASS_DATA } from '../constants';
-import { GraduationCap, Search, Save, FileText, ChevronRight, Loader2, Info } from 'lucide-react';
+import { GraduationCap, Search, Save, FileText, ChevronRight, Loader2, Info, FileSpreadsheet, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
+import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { format } from 'date-fns';
+import logo from '../assets/logo.png';
 
 export default function Results() {
   const [activeTab, setActiveTab] = useState<'report-card' | 'reports' | 'class-entry'>('class-entry');
@@ -34,6 +39,9 @@ export default function Results() {
 
   const [printingCollective, setPrintingCollective] = useState(false);
   const [printingIndividual, setPrintingIndividual] = useState<any>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const collectiveRef = useRef<HTMLDivElement>(null);
+  const individualRef = useRef<HTMLDivElement>(null);
 
   const searchStudent = async () => {
     if (!regNoSearch) return;
@@ -318,6 +326,211 @@ export default function Results() {
       window.print();
       setPrintingIndividual(null);
     }, 500);
+  };
+
+  const downloadCollectiveExcel = () => {
+    if (resultsList.length === 0) return;
+    
+    const isHifz = reportSection === Section.BANIN_HIFZ;
+    const subjects = CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects || [];
+
+    const data = resultsList.map((r, idx) => {
+      const row: any = {
+        'پوزیشن': idx + 1,
+        'رجسٹریشن نمبر': r.regNo,
+        'نام': r.studentName,
+        'ولدیت': r.fatherName,
+      };
+
+      if (isHifz) {
+        row['سوال 1'] = r.hifzBreakdown?.q1 || 0;
+        row['سوال 2'] = r.hifzBreakdown?.q2 || 0;
+        row['سوال 3'] = r.hifzBreakdown?.q3 || 0;
+        row['لہجہ'] = r.hifzBreakdown?.lahja || 0;
+        row['صفائی'] = r.hifzBreakdown?.safai || 0;
+        row['ادعیہ'] = r.hifzBreakdown?.adiya || 0;
+      } else {
+        subjects.forEach(s => {
+          row[s] = r.subjects?.[s] || 0;
+        });
+      }
+
+      row['میزان'] = r.totalMarks;
+      row['فیصد'] = r.percentage.toFixed(1) + '%';
+      row['grade'] = r.grade;
+
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Results");
+    XLSX.writeFile(wb, `Collective_Result_${reportClass}_${examType}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
+  const downloadCollectivePDF = async () => {
+    if (!collectiveRef.current) return;
+    setDownloadingPDF(true);
+    try {
+      const canvas = await html2canvas(collectiveRef.current, {
+        scale: 4,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const elements = clonedDoc.getElementsByTagName('*');
+          for (let i = 0; i < elements.length; i++) {
+            const el = elements[i] as HTMLElement;
+            
+            // Remove transitions and shadows which often use oklch in Tailwind 4
+            el.style.transition = 'none';
+            el.style.animation = 'none';
+            el.style.boxShadow = 'none';
+            el.style.textShadow = 'none';
+
+            const classList = el.className;
+            if (typeof classList === 'string') {
+              // Text colors
+              if (classList.includes('text-white')) el.style.color = '#ffffff';
+              else if (classList.includes('text-emerald-900')) el.style.color = '#064e3b';
+              else if (classList.includes('text-emerald-700')) el.style.color = '#047857';
+              else if (classList.includes('text-red-700')) el.style.color = '#b91c1c';
+              else if (classList.includes('text-gray-600')) el.style.color = '#4b5563';
+              else if (classList.includes('text-gray-900')) el.style.color = '#111827';
+              
+              // Background colors
+              if (classList.includes('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
+              else if (classList.includes('bg-emerald-800')) el.style.backgroundColor = '#065f46';
+              else if (classList.includes('bg-emerald-600')) el.style.backgroundColor = '#059669';
+              else if (classList.includes('bg-emerald-50')) {
+                if (classList.includes('bg-emerald-50/20')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.2)';
+                else if (classList.includes('bg-emerald-50/30')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.3)';
+                else if (classList.includes('bg-emerald-50/50')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.5)';
+                else el.style.backgroundColor = '#ecfdf5';
+              }
+              else if (classList.includes('bg-red-600')) el.style.backgroundColor = '#dc2626';
+              else if (classList.includes('bg-gray-50')) el.style.backgroundColor = '#f9fafb';
+              else if (classList.includes('bg-gray-100')) el.style.backgroundColor = '#f3f4f6';
+              else if (classList.includes('bg-white')) el.style.backgroundColor = '#ffffff';
+
+              // Border colors
+              if (classList.includes('border-emerald-900')) {
+                if (classList.includes('border-emerald-900/20')) el.style.borderColor = 'rgba(6, 78, 59, 0.2)';
+                else if (classList.includes('border-emerald-900/10')) el.style.borderColor = 'rgba(6, 78, 59, 0.1)';
+                else el.style.borderColor = '#064e3b';
+              }
+              else if (classList.includes('border-emerald-800')) el.style.borderColor = '#065f46';
+              else if (classList.includes('border-gray-200')) el.style.borderColor = '#e5e7eb';
+              else if (classList.includes('border-gray-300')) el.style.borderColor = '#d1d5db';
+              else if (classList.includes('border-gray-100')) el.style.borderColor = '#f3f4f6';
+            }
+          }
+        }
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Collective_Result_${reportClass}_${examType}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert('پی ڈی ایف ڈاؤن لوڈ کرنے میں غلطی ہوئی۔');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
+  const downloadIndividualPDF = async () => {
+    if (!individualRef.current) return;
+    setDownloadingPDF(true);
+    try {
+      const canvas = await html2canvas(individualRef.current, {
+        scale: 4,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const elements = clonedDoc.getElementsByTagName('*');
+          for (let i = 0; i < elements.length; i++) {
+            const el = elements[i] as HTMLElement;
+            
+            el.style.transition = 'none';
+            el.style.animation = 'none';
+            el.style.boxShadow = 'none';
+            el.style.textShadow = 'none';
+
+            const classList = el.className;
+            if (typeof classList === 'string') {
+              if (classList.includes('text-white')) el.style.color = '#ffffff';
+              else if (classList.includes('text-emerald-900')) el.style.color = '#064e3b';
+              else if (classList.includes('text-emerald-700')) el.style.color = '#047857';
+              else if (classList.includes('text-red-700')) el.style.color = '#b91c1c';
+              else if (classList.includes('text-gray-600')) el.style.color = '#4b5563';
+              
+              if (classList.includes('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
+              else if (classList.includes('bg-emerald-800')) el.style.backgroundColor = '#065f46';
+              else if (classList.includes('bg-emerald-600')) el.style.backgroundColor = '#059669';
+              else if (classList.includes('bg-emerald-50')) {
+                if (classList.includes('bg-emerald-50/20')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.2)';
+                else if (classList.includes('bg-emerald-50/30')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.3)';
+                else if (classList.includes('bg-emerald-50/50')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.5)';
+                else el.style.backgroundColor = '#ecfdf5';
+              }
+              else if (classList.includes('bg-gray-50')) el.style.backgroundColor = '#f9fafb';
+              else if (classList.includes('bg-white')) el.style.backgroundColor = '#ffffff';
+
+              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
+              else if (el.classList.contains('border-emerald-800')) el.style.borderColor = '#065f46';
+              else if (classList.includes('border-gray-200')) el.style.borderColor = '#e5e7eb';
+              else if (classList.includes('border-gray-300')) el.style.borderColor = '#d1d5db';
+            }
+          }
+        }
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', [155, 215]); // 15.5cm x 21.5cm
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Report_Card_${student?.name}_${examType}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert('پی ڈی ایف ڈاؤن لوڈ کرنے میں غلطی ہوئی۔');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
+  const downloadIndividualExcel = () => {
+    if (!student) return;
+    
+    const data = Object.keys(studentAllResults).map(exam => {
+      const res = studentAllResults[exam as ExamType];
+      if (!res) return null;
+      
+      const row: any = {
+        'امتحان': exam,
+        'کل نمبر': res.totalMarks,
+        'فیصد': res.percentage.toFixed(1) + '%',
+        'گریڈ': res.grade
+      };
+      
+      if (student.section === Section.BANIN_HIFZ) {
+         if (res.hifzBreakdown) {
+           Object.assign(row, res.hifzBreakdown);
+         }
+      } else {
+         if (res.subjects) {
+           Object.assign(row, res.subjects);
+         }
+      }
+      return row;
+    }).filter(Boolean);
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Student_Report");
+    XLSX.writeFile(wb, `Report_Card_${student.name}.xlsx`);
   };
 
   const positionsMap = calculatePositions(classStudents);
@@ -634,15 +847,27 @@ export default function Results() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-8"
             >
-              <div className="flex justify-between items-center bg-gray-50 p-6 rounded-2xl">
-                <div>
-                  <h3 className="text-xl font-bold">تعلیمی سالانہ رپورٹ کارڈ</h3>
-                  <p className="text-gray-500 text-sm">جامعہ تعلیم القرآن ناگمان ضلع پشاور</p>
-                </div>
-                <div className="flex gap-4">
+              <div className="flex justify-between items-center bg-gray-50 p-6 rounded-2xl mb-8 no-print">
+                <h3 className="text-xl font-bold">رپورٹ کارڈ منظر</h3>
+                <div className="flex gap-4 flex-wrap">
+                  <button
+                    onClick={downloadIndividualExcel}
+                    className="bg-emerald-50 text-emerald-700 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-100 transition-all font-urdu border border-emerald-100"
+                  >
+                    <FileSpreadsheet className="w-5 h-5" />
+                    ایکسل ڈاؤن لوڈ
+                  </button>
+                  <button
+                    onClick={downloadIndividualPDF}
+                    disabled={downloadingPDF}
+                    className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-red-700 shadow-lg shadow-red-100 disabled:opacity-50 font-urdu"
+                  >
+                    {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                    پی ڈی ایف
+                  </button>
                   <button
                     onClick={() => setStudent(null)}
-                    className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all"
+                    className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all font-urdu"
                   >
                     فہرست پر واپس جائیں
                   </button>
@@ -663,7 +888,7 @@ export default function Results() {
                       setPrintingIndividual(null);
                     }, 500);
                   }}
-                  className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-100"
+                  className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-100 font-urdu"
                 >
                   <FileText className="w-5 h-5" />
                   رپورٹ کارڈ پرنٹ کریں
@@ -671,39 +896,57 @@ export default function Results() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-right border-b border-gray-100 pb-8">
-                <div className="space-y-1">
-                  <span className="text-gray-500 text-sm font-bold">طالب علم کا نام</span>
-                  <p className="font-bold text-lg text-emerald-900">{student.name}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-gray-500 text-sm font-bold">ولدیت</span>
-                  <p className="font-bold text-lg text-emerald-900">{student.fatherName}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-gray-500 text-sm font-bold">رجسٹریشن نمبر</span>
-                  <p className="font-bold text-lg font-mono text-emerald-900">{student.regNo}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-gray-500 text-sm font-bold">سیکشن</span>
-                  <p className="font-bold text-lg text-emerald-900">{student.section}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-gray-500 text-sm font-bold">درجہ</span>
-                  <p className="font-bold text-lg text-emerald-900">{student.currentClass}</p>
+            {/* Report Card content wrapper for PDF generation */}
+            <div 
+              ref={individualRef} 
+              className="bg-white mx-auto relative overflow-hidden flex flex-col p-8 border-4 border-emerald-900" 
+              style={{ width: '15.5cm', height: '21.5cm' }}
+            >
+              {/* Watermark Logo */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none">
+                <img src={logo} alt="Watermark" className="w-[80%] object-contain" />
+              </div>
+
+              {/* Header */}
+              <div className="relative text-center border-b-2 border-emerald-900 pb-3 mb-4">
+                <div className="flex flex-col items-center gap-4">
+                  <h1 className="text-3xl font-black text-emerald-900 leading-tight">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                  <div className="mt-4 flex justify-center">
+                    <p className="text-xl font-bold bg-emerald-900 text-white px-10 pt-3 pb-8 rounded-full shadow-md inline-flex items-center justify-center leading-none">سالانہ تعلیمی رپورٹ</p>
+                  </div>
                 </div>
               </div>
 
-              {/* On-Screen Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-2 border-gray-100 rounded-2xl overflow-hidden text-center">
+              {/* Student Info Grid */}
+              <div className="relative grid grid-cols-2 gap-x-8 gap-y-3 mb-4 text-sm font-bold border-b border-gray-200 pb-3">
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">طالب علم:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{student.name}</span>
+                </div>
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">ولدیت:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{student.fatherName}</span>
+                </div>
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">رجسٹریشن نمبر:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-mono font-black text-base">{student.regNo}</span>
+                </div>
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">درجہ:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{student.currentClass} ({student.section})</span>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="relative flex-1">
+                <table className="w-full border-collapse border-2 border-emerald-900 text-center text-xs">
                   <thead>
-                    <tr className="bg-emerald-600 text-white">
-                      <th className="p-4 border-r border-emerald-500 font-bold w-48">مضامین</th>
-                      <th className="p-4 border-r border-emerald-500 font-bold">سہ ماہی</th>
-                      <th className="p-4 border-r border-emerald-500 font-bold">شش ماہی</th>
-                      <th className="p-4 border-r border-emerald-500 font-bold">سالانہ</th>
-                      <th className="p-4 font-bold">مجموعہ</th>
+                    <tr className="bg-emerald-900 text-white">
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white w-1/3">مضامین</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سہ ماہی</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">شش ماہی</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سالانہ</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">مجموعہ</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -714,12 +957,12 @@ export default function Results() {
                         const a = studentAllResults[ExamType.ANNUAL]?.subjects?.[sub] ?? '-';
                         const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
                         return (
-                          <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                            <td className="p-4 font-bold border-r border-gray-100 bg-gray-50/30">{sub}</td>
-                            <td className="p-4 border-r border-gray-100">{q}</td>
-                            <td className="p-4 border-r border-gray-100">{h}</td>
-                            <td className="p-4 border-r border-gray-100">{a}</td>
-                            <td className="p-4 font-black text-emerald-700">{total || '-'}</td>
+                          <tr key={idx} className="border-b border-emerald-900">
+                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
                           </tr>
                         );
                       })
@@ -732,22 +975,22 @@ export default function Results() {
                         const a = studentAllResults[ExamType.ANNUAL]?.hifzBreakdown?.[key] ?? '-';
                         const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
                         return (
-                          <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                            <td className="p-4 font-bold border-r border-gray-100 bg-gray-50/30">{sub}</td>
-                            <td className="p-4 border-r border-gray-100">{q}</td>
-                            <td className="p-4 border-r border-gray-100">{h}</td>
-                            <td className="p-4 border-r border-gray-100">{a}</td>
-                            <td className="p-4 font-black text-emerald-700">{total || '-'}</td>
+                          <tr key={idx} className="border-b border-emerald-900">
+                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
                           </tr>
                         );
                       })
                     )}
-                    <tr className="bg-emerald-50/50 font-black text-lg border-t-2 border-emerald-200">
-                      <td className="p-6 border-r border-emerald-100">کل حاصل کردہ</td>
-                      <td className="p-6 border-r border-emerald-100">{studentAllResults[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
-                      <td className="p-6 border-r border-emerald-100">{studentAllResults[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
-                      <td className="p-6 border-r border-emerald-100">{studentAllResults[ExamType.ANNUAL]?.totalMarks || '0'}</td>
-                      <td className="p-6 text-emerald-800">
+                    <tr className="bg-emerald-50/50 font-black text-sm border-t-2 border-emerald-900">
+                      <td className="p-3 border-r-2 border-emerald-900">کل حاصل کردہ نمبرات</td>
+                      <td className="p-3 border-r-2 border-emerald-900 font-black">{studentAllResults[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
+                      <td className="p-3 border-r-2 border-emerald-900 font-black">{studentAllResults[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
+                      <td className="p-3 border-r-2 border-emerald-900 font-black">{studentAllResults[ExamType.ANNUAL]?.totalMarks || '0'}</td>
+                      <td className="p-3 border-r-2 border-emerald-900 text-emerald-900 font-black">
                         {(Number(studentAllResults[ExamType.QUARTERLY]?.totalMarks) || 0) + 
                          (Number(studentAllResults[ExamType.HALF_YEARLY]?.totalMarks) || 0) + 
                          (Number(studentAllResults[ExamType.ANNUAL]?.totalMarks) || 0)}
@@ -757,26 +1000,39 @@ export default function Results() {
                 </table>
               </div>
 
-              <div className="flex justify-between items-center bg-gray-50 p-6 rounded-2xl">
-                 <div className="flex gap-12">
-                   <div className="flex flex-col">
-                     <span className="text-gray-500 text-sm">مجموعی فیصد</span>
-                     <span className="text-2xl font-black text-emerald-900">
-                       {(((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
-                         (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
-                         (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 3).toFixed(1)}%
-                     </span>
-                   </div>
-                   <div className="flex flex-col">
-                     <span className="text-gray-500 text-sm">مجموعی کیفیت</span>
-                     <span className="text-2xl font-black text-emerald-900">
-                       {calculateGrade((((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
-                         (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
-                         (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 300) * 100)}
-                     </span>
-                   </div>
-                 </div>
+              {/* Total Stats Row */}
+              <div className="relative mt-4 py-3 border-y-2 border-emerald-900 flex justify-around items-center font-black bg-emerald-50/30">
+                <div className="flex gap-4 items-center">
+                  <span className="text-gray-600">مجموعی فیصد:</span>
+                  <span className="text-xl text-emerald-900">
+                    {(((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
+                      (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
+                      (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 3).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="h-8 w-0.5 bg-emerald-900"></div>
+                <div className="flex gap-4 items-center">
+                  <span className="text-gray-600">مجموعی کیفیت:</span>
+                  <span className="text-xl text-emerald-900">
+                    {calculateGrade((((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
+                      (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
+                      (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 300) * 100)}
+                  </span>
+                </div>
               </div>
+
+              {/* Signatures */}
+              <div className="relative mt-12 flex justify-between px-4 pb-2">
+                <div className="text-center">
+                  <div className="w-32 border-b border-emerald-900 mb-2"></div>
+                  <p className="font-bold text-emerald-900">دستخط ناظم</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-32 border-b border-emerald-900 mb-2"></div>
+                  <p className="font-bold text-emerald-900">دستخط مہتمم</p>
+                </div>
+              </div>
+            </div>
             </motion.div>
           )}
         </div>
@@ -832,35 +1088,80 @@ export default function Results() {
               animate={{ opacity: 1 }}
               className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
             >
-              <div className="p-8 border-b bg-gray-50 flex justify-between items-center print:bg-white">
-                <div className="flex-1 text-center">
+              <div className="p-8 border-b bg-gray-50 flex justify-between items-center print:bg-white flex-wrap gap-4">
+                <div className="flex-1 text-center min-w-[300px]">
                   <h2 className="text-2xl font-bold">نتیجہ {examType} جامعہ تعلیم القرآن پشاور</h2>
                   <p className="text-emerald-700 font-bold mt-1">(سیکشن {reportSection} درجہ {reportClass})</p>
                 </div>
-                <button 
-                  onClick={printCollective}
-                  className="bg-gray-800 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all print:hidden"
-                >
-                  <FileText className="w-5 h-5" />
-                  اجتماعی پرنٹ
-                </button>
+                <div className="flex gap-3 no-print">
+                  <button
+                    onClick={downloadCollectiveExcel}
+                    className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl font-bold border border-emerald-100 hover:bg-emerald-100 transition-all"
+                  >
+                    <FileSpreadsheet className="w-5 h-5" />
+                    ایکسل
+                  </button>
+                  <button
+                    onClick={downloadCollectivePDF}
+                    disabled={downloadingPDF}
+                    className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all font-urdu"
+                  >
+                    {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                    پی ڈی ایف
+                  </button>
+                  <button 
+                    onClick={printCollective}
+                    className="bg-gray-800 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all"
+                  >
+                    <FileText className="w-5 h-5" />
+                    اجتماعی پرنٹ
+                  </button>
+                </div>
               </div>
-              <div className="overflow-x-auto p-4">
-                <table className="w-full text-right border-collapse text-sm min-w-[1000px]">
+              
+              <div ref={collectiveRef} className="bg-white p-10 relative overflow-hidden print-area border border-gray-100 shadow-sm mx-auto" style={{ minWidth: '297mm', minHeight: '210mm' }}>
+                {/* Watermark Logo */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
+                  <img src={logo} alt="Watermark" className="w-[500px] h-[500px] object-contain" />
+                </div>
+
+                {/* Header Section */}
+                <div className="relative mb-6">
+                  <div className="flex justify-between items-center border-b-2 border-emerald-900 pb-4 mb-4">
+                    <h2 className="text-2xl font-black text-emerald-900 leading-none">
+                      نتیجہ امتحان {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'}
+                    </h2>
+                    <h1 className="text-3xl font-black text-emerald-900 leading-none">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                  </div>
+                  
+                  <div className="flex gap-8 text-base font-bold text-gray-700 bg-emerald-50/50 p-2 border border-emerald-100 rounded">
+                    <div className="flex gap-2">
+                      <span className="text-emerald-900">سیکشن:</span>
+                      <span className="font-black">{reportSection}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-emerald-900">درجہ:</span>
+                      <span className="font-black">{reportClass}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative overflow-x-auto">
+                  <table className="w-full text-right border-collapse text-sm border-2 border-emerald-900">
                   <thead>
-                    <tr className="bg-gray-100 text-gray-800">
-                      <th className="border p-3 w-40 text-center">رجسٹریشن نمبر</th>
-                      <th className="border p-3 w-40 text-right">طالب علم کا نام</th>
-                      <th className="border p-3 w-48">ولدیت</th>
+                    <tr className="bg-emerald-900 text-white font-urdu">
+                      <th className="border-r border-emerald-800 p-3 w-40 text-center font-black">رجسٹریشن نمبر</th>
+                      <th className="border-r border-emerald-800 p-3 w-40 text-right font-black">طالب علم کا نام</th>
+                      <th className="border-r border-emerald-800 p-3 w-48 font-black">ولدیت</th>
                       {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                        <th key={s} className="border p-3 text-xs w-20 text-center">{s}</th>
+                        <th key={s} className="border-r border-emerald-800 p-3 text-xs w-20 text-center font-black">{s}</th>
                       ))}
-                      {reportSection === Section.BANIN_HIFZ && ['Q1', 'Q2', 'Q3', 'Lh', 'Sf', 'Ad'].map(s => (
-                        <th key={s} className="border p-3 text-center">{s}</th>
+                      {reportSection === Section.BANIN_HIFZ && ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map(s => (
+                        <th key={s} className="border-r border-emerald-800 p-3 text-center font-black">{s}</th>
                       ))}
-                      <th className="border p-3 w-20 text-center">مجموعہ</th>
-                      <th className="border p-3 w-20 text-center">پوزیشن</th>
-                      <th className="border p-3 w-24 text-center">کیفیت</th>
+                      <th className="border-r border-emerald-800 p-3 w-20 text-center font-black">مجموعہ</th>
+                      <th className="border-r border-emerald-800 p-3 w-20 text-center font-black">پوزیشن</th>
+                      <th className="border p-3 w-24 text-center font-black">کیفیت</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -880,40 +1181,46 @@ export default function Results() {
                       }
 
                       return (
-                        <tr key={i} className="hover:bg-gray-50">
-                          <td className="border p-3 font-mono whitespace-nowrap text-center">{res.regNo}</td>
-                          <td className="border p-3 font-bold text-right">{res.studentName}</td>
-                          <td className="border p-3 text-gray-600">{res.fatherName}</td>
-                          {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                            <td key={s} className="border p-3 text-center font-bold">{res.subjects?.[s] || '-'}</td>
-                          ))}
-                          {reportSection === Section.BANIN_HIFZ && (
-                            <>
-                              <td className="border p-3 text-center">{res.hifzBreakdown?.q1}</td>
-                              <td className="border p-3 text-center">{res.hifzBreakdown?.q2}</td>
-                              <td className="border p-3 text-center">{res.hifzBreakdown?.q3}</td>
-                              <td className="border p-3 text-center">{res.hifzBreakdown?.lahja}</td>
-                              <td className="border p-3 text-center">{res.hifzBreakdown?.safai}</td>
-                              <td className="border p-3 text-center">{res.hifzBreakdown?.adiya}</td>
-                            </>
-                          )}
-                          <td className="border p-3 text-center font-black text-emerald-700 bg-emerald-50/20">{res.totalMarks}</td>
-                          <td className="border p-3 text-center font-bold">{rank}</td>
-                          <td className="border p-3 text-center font-bold">
-                            <span className={cn(
-                              "px-2 py-0.5 rounded-full text-[10px]",
-                              res.grade === 'راسب' ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
-                            )}>
+                          <tr key={i} className="hover:bg-gray-50 border-b border-emerald-900/10">
+                            <td className="border-r border-emerald-900/20 p-3 font-mono whitespace-nowrap text-center text-xs">{res.regNo}</td>
+                            <td className="border-r border-emerald-900/20 p-3 font-bold text-right text-xs">{res.studentName}</td>
+                            <td className="border-r border-emerald-900/20 p-3 text-gray-600 font-urdu text-[10px] leading-tight">{res.fatherName}</td>
+                            {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
+                              <td key={s} className="border-r border-emerald-900/20 p-3 text-center font-bold text-xs">{res.subjects?.[s] || '-'}</td>
+                            ))}
+                            {reportSection === Section.BANIN_HIFZ && (
+                              <>
+                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.q1}</td>
+                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.q2}</td>
+                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.q3}</td>
+                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.lahja}</td>
+                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.safai}</td>
+                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.adiya}</td>
+                              </>
+                            )}
+                            <td className="border-r border-emerald-900/20 p-3 text-center font-black text-emerald-700 bg-emerald-50/20 text-sm">{res.totalMarks}</td>
+                            <td className="border-r border-emerald-900/20 p-3 text-center font-bold text-sm">{rank}</td>
+                            <td className="border p-3 text-center font-bold text-xs font-urdu">
                               {res.grade}
-                            </span>
-                          </td>
+                            </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+                </div>
+
+                {/* Footer Signatures for Collective Sheet */}
+                <div className="mt-12 flex justify-between px-16 relative">
+                  <div className="text-center w-64 border-t-2 border-emerald-900 pt-3">
+                    <p className="font-urdu font-black text-xl text-emerald-900">دستخط ناظم</p>
+                  </div>
+                  <div className="text-center w-64 border-t-2 border-emerald-900 pt-3">
+                    <p className="font-urdu font-black text-xl text-emerald-900">دستخط مہتمم</p>
+                  </div>
+                </div>
               </div>
-            </motion.div>
+          </motion.div>
           )}
         </div>
       )}
@@ -925,153 +1232,160 @@ export default function Results() {
           .print-area, .print-area * { visibility: visible; }
           .print-area { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
           @page { size: A4 landscape; margin: 1cm; }
-          .individual-page-mode { size: A4 portrait; }
+          .individual-page-mode-wrapper { 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            background: white;
+          }
+          .individual-page-mode { 
+            width: 15.5cm !important; 
+            height: 21.5cm !important; 
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          @page .individual-page-mode {
+            size: 155mm 215mm;
+            margin: 0;
+          }
         }
       `}</style>
       
       {/* Individual Print View */}
       {printingIndividual && (
-        <div className="print-area font-urdu text-right individual-page-mode" dir="rtl">
-          <div className="p-10 border-8 border-double border-emerald-900 rounded-[3rem] m-6 bg-white min-h-[1050px] relative">
-            <div className="text-center mb-12 flex flex-col items-center">
-              <div className="text-emerald-900 mb-2">
-                <GraduationCap className="w-16 h-16" />
+        <div className="print-area font-urdu text-right individual-page-mode-wrapper" dir="rtl">
+           <div 
+              className="individual-page-mode bg-white relative overflow-hidden flex flex-col p-8 border-4 border-emerald-900 mx-auto" 
+              style={{ width: '15.5cm', height: '21.5cm' }}
+            >
+              {/* Watermark Logo */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.08] pointer-events-none">
+                <img src={logo} alt="Watermark" className="w-[85%] object-contain" />
               </div>
-              <h1 className="text-5xl font-black text-emerald-900 mb-2">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
-              <div className="h-1 w-64 bg-emerald-900 mb-4 mx-auto"></div>
-              <p className="text-2xl font-bold tracking-widest bg-emerald-900 text-white px-8 py-2 rounded-full">تعلیمی سالانہ رپورٹ کارڈ</p>
-            </div>
 
-            <div className="grid grid-cols-2 gap-x-12 gap-y-8 mb-12 text-2xl font-bold px-8">
-              <div className="flex gap-4 items-end">
-                <span className="text-emerald-900 font-black whitespace-nowrap">سیکشن:</span>
-                <span className="border-b-2 border-emerald-200 flex-1 text-center pb-1">{student?.section || '-'}</span>
-              </div>
-              <div className="flex gap-4 items-end">
-                <span className="text-emerald-900 font-black whitespace-nowrap">درجہ:</span>
-                <span className="border-b-2 border-emerald-200 flex-1 text-center pb-1">{printingIndividual.class}</span>
-              </div>
-              <div className="flex gap-4 items-end">
-                <span className="text-emerald-900 font-black whitespace-nowrap">طالب علم:</span>
-                <span className="border-b-2 border-emerald-200 flex-1 text-center pb-1">{printingIndividual.studentName}</span>
-              </div>
-              <div className="flex gap-4 items-end">
-                <span className="text-emerald-900 font-black whitespace-nowrap">ولدیت:</span>
-                <span className="border-b-2 border-emerald-200 flex-1 text-center pb-1">{printingIndividual.fatherName}</span>
-              </div>
-              <div className="flex gap-4 items-end">
-                <span className="text-emerald-900 font-black whitespace-nowrap">رجسٹریشن نمبر:</span>
-                <span className="border-b-2 border-emerald-200 flex-1 text-center pb-1 font-mono">{printingIndividual.regNo}</span>
-              </div>
-              <div className="flex gap-4 items-end">
-                <span className="text-emerald-900 font-black whitespace-nowrap">تعلیمی سال:</span>
-                <span className="border-b-2 border-emerald-200 flex-1 text-center pb-1">{printingIndividual.year}</span>
-              </div>
-            </div>
-
-            <table className="w-full border-[3px] border-emerald-900 text-center mb-12 text-xl overflow-hidden rounded-t-2xl">
-              <thead>
-                <tr className="bg-emerald-900 text-white">
-                  <th className="border-r-2 border-emerald-800 p-5 font-black w-56">مضامین</th>
-                  <th className="border-r-2 border-emerald-800 p-5 font-black">سہ ماہی</th>
-                  <th className="border-r-2 border-emerald-800 p-5 font-black">شش ماہی</th>
-                  <th className="border-r-2 border-emerald-800 p-5 font-black">سالانہ</th>
-                  <th className="p-5 font-black">مجموعہ نمبرات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {student?.section !== Section.BANIN_HIFZ ? (
-                  CLASS_DATA[student?.section as Section]?.find(c => c.name === printingIndividual.class)?.subjects.map((sub, idx) => {
-                    const qResult = printingIndividual.allExams?.[ExamType.QUARTERLY];
-                    const hResult = printingIndividual.allExams?.[ExamType.HALF_YEARLY];
-                    const aResult = printingIndividual.allExams?.[ExamType.ANNUAL];
-                    
-                    const q = Number(qResult?.subjects?.[sub] || 0);
-                    const h = Number(hResult?.subjects?.[sub] || 0);
-                    const a = Number(aResult?.subjects?.[sub] || 0);
-                    const total = q + h + a;
-                    return (
-                      <tr key={idx} className="border-b-2 border-emerald-100 hover:bg-emerald-50/30 transition-colors">
-                        <td className="border-r-2 border-emerald-100 p-5 font-black bg-emerald-50/50 text-right pr-6">{sub}</td>
-                        <td className="border-r-2 border-emerald-100 p-5 font-bold">{qResult ? q : '-'}</td>
-                        <td className="border-r-2 border-emerald-100 p-5 font-bold">{hResult ? h : '-'}</td>
-                        <td className="border-r-2 border-emerald-100 p-5 font-bold">{aResult ? a : '-'}</td>
-                        <td className="p-5 font-black text-emerald-900">{total || '-'}</td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map((sub, idx) => {
-                    const keys = ['q1', 'q2', 'q3', 'lahja', 'safai', 'adiya'];
-                    const key = keys[idx];
-                    const qResult = printingIndividual.allExams?.[ExamType.QUARTERLY];
-                    const hResult = printingIndividual.allExams?.[ExamType.HALF_YEARLY];
-                    const aResult = printingIndividual.allExams?.[ExamType.ANNUAL];
-
-                    const q = Number(qResult?.hifzBreakdown?.[key] || 0);
-                    const h = Number(hResult?.hifzBreakdown?.[key] || 0);
-                    const a = Number(aResult?.hifzBreakdown?.[key] || 0);
-                    const total = q + h + a;
-                    return (
-                      <tr key={idx} className="border-b-2 border-emerald-100 hover:bg-emerald-50/30">
-                        <td className="border-r-2 border-emerald-100 p-5 font-black bg-emerald-50/50 text-right pr-6">{sub}</td>
-                        <td className="border-r-2 border-emerald-100 p-5 font-bold">{qResult ? q : '-'}</td>
-                        <td className="border-r-2 border-emerald-100 p-5 font-bold">{hResult ? h : '-'}</td>
-                        <td className="border-r-2 border-emerald-100 p-5 font-bold">{aResult ? a : '-'}</td>
-                        <td className="p-5 font-black text-emerald-900">{total || '-'}</td>
-                      </tr>
-                    );
-                  })
-                )}
-                {/* Fixed Rows for Totals */}
-                <tr className="bg-emerald-50 font-black text-2xl border-t-4 border-emerald-900">
-                  <td className="border-r-2 border-emerald-900 p-8 text-right pr-6">کل حاصل کردہ نمبرات</td>
-                  <td className="border-r-2 border-emerald-900 p-8">{printingIndividual.allExams?.[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
-                  <td className="border-r-2 border-emerald-900 p-8">{printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
-                  <td className="border-r-2 border-emerald-900 p-8">{printingIndividual.allExams?.[ExamType.ANNUAL]?.totalMarks || '0'}</td>
-                  <td className="p-8 text-emerald-900">
-                    {(Number(printingIndividual.allExams?.[ExamType.QUARTERLY]?.totalMarks) || 0) + 
-                     (Number(printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.totalMarks) || 0) + 
-                     (Number(printingIndividual.allExams?.[ExamType.ANNUAL]?.totalMarks) || 0)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div className="grid grid-cols-2 gap-12 mt-16 px-12">
-              <div className="space-y-4">
-                <div className="p-6 border-4 border-emerald-100 rounded-3xl bg-emerald-50/30">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xl font-bold text-gray-600">کل فیصد:</span>
-                    <span className="text-4xl font-black text-emerald-900">{printingIndividual.percentage.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold text-gray-600">کیفیت:</span>
-                    <span className="text-3xl font-black text-emerald-900">{printingIndividual.grade}</span>
+              {/* Header */}
+              <div className="relative text-center border-b-2 border-emerald-900 pb-3 mb-4">
+                <div className="flex flex-col items-center gap-4">
+                  <h1 className="text-3xl font-black text-emerald-900 leading-tight">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                  <div className="mt-4 flex justify-center">
+                    <p className="text-xl font-bold bg-emerald-900 text-white px-10 pt-3 pb-8 rounded-full shadow-md inline-flex items-center justify-center leading-none">سالانہ تعلیمی رپورٹ</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col justify-end gap-12">
-                <div className="flex justify-between items-center w-full">
-                  <div className="text-center">
-                    <div className="w-56 border-b-4 border-emerald-900 mb-3 mx-auto"></div>
-                    <p className="text-xl font-black text-emerald-900">دستخط نگران درجہ</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-56 border-b-4 border-emerald-900 mb-3 mx-auto"></div>
-                    <p className="text-xl font-black text-emerald-900">مہر و دستخط مہتمم</p>
-                  </div>
+              {/* Student Info Grid */}
+              <div className="relative grid grid-cols-2 gap-x-8 gap-y-3 mb-4 text-sm font-bold border-b border-gray-200 pb-3">
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">طالب علم:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{printingIndividual.studentName}</span>
+                </div>
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">ولدیت:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{printingIndividual.fatherName}</span>
+                </div>
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">رجسٹریشن نمبر:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-mono font-black text-base">{printingIndividual.regNo}</span>
+                </div>
+                <div className="flex gap-2 items-baseline">
+                  <span className="text-emerald-900 whitespace-nowrap">درجہ:</span>
+                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{printingIndividual.class}</span>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="relative flex-1">
+                <table className="w-full border-collapse border-2 border-emerald-900 text-center text-xs">
+                  <thead>
+                    <tr className="bg-emerald-900 text-white">
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white w-1/3">مضامین</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سہ ماہی</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">شش ماہی</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سالانہ</th>
+                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">مجموعہ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {student?.section !== Section.BANIN_HIFZ ? (
+                      CLASS_DATA[student?.section as Section]?.find(c => c.name === printingIndividual.class)?.subjects.map((sub, idx) => {
+                        const q = printingIndividual.allExams?.[ExamType.QUARTERLY]?.subjects?.[sub] ?? '-';
+                        const h = printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.subjects?.[sub] ?? '-';
+                        const a = printingIndividual.allExams?.[ExamType.ANNUAL]?.subjects?.[sub] ?? '-';
+                        const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
+                        return (
+                          <tr key={idx} className="border-b border-emerald-900">
+                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map((sub, idx) => {
+                        const keys = ['q1', 'q2', 'q3', 'lahja', 'safai', 'adiya'];
+                        const key = keys[idx];
+                        const q = printingIndividual.allExams?.[ExamType.QUARTERLY]?.hifzBreakdown?.[key] ?? '-';
+                        const h = printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.hifzBreakdown?.[key] ?? '-';
+                        const a = printingIndividual.allExams?.[ExamType.ANNUAL]?.hifzBreakdown?.[key] ?? '-';
+                        const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
+                        return (
+                          <tr key={idx} className="border-b border-emerald-900">
+                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
+                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                    <tr className="bg-emerald-50/50 font-black text-sm border-t-2 border-emerald-900">
+                      <td className="p-3 border-r-2 border-emerald-900">کل حاصل کردہ نمبرات</td>
+                      <td className="p-3 border-r-2 border-emerald-900 font-black">{printingIndividual.allExams?.[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
+                      <td className="p-3 border-r-2 border-emerald-900 font-black">{printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
+                      <td className="p-3 border-r-2 border-emerald-900 font-black">{printingIndividual.allExams?.[ExamType.ANNUAL]?.totalMarks || '0'}</td>
+                      <td className="p-3 border-r-2 border-emerald-900 text-emerald-900 font-black">
+                        {(Number(printingIndividual.allExams?.[ExamType.QUARTERLY]?.totalMarks) || 0) + 
+                         (Number(printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.totalMarks) || 0) + 
+                         (Number(printingIndividual.allExams?.[ExamType.ANNUAL]?.totalMarks) || 0)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Total Stats Row */}
+              <div className="relative mt-4 py-3 border-y-2 border-emerald-900 flex justify-around items-center font-black bg-emerald-50/30">
+                <div className="flex gap-4 items-center">
+                  <span className="text-gray-600">مجموعی فیصد:</span>
+                  <span className="text-xl text-emerald-900">
+                    {printingIndividual.percentage.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="h-8 w-0.5 bg-emerald-900"></div>
+                <div className="flex gap-4 items-center">
+                  <span className="text-gray-600">مجموعی کیفیت:</span>
+                  <span className="text-xl text-emerald-900">
+                    {printingIndividual.grade}
+                  </span>
+                </div>
+              </div>
+
+              {/* Signatures */}
+              <div className="relative mt-12 flex justify-between px-4 pb-2">
+                <div className="text-center">
+                  <div className="w-32 border-b border-emerald-900 mb-2 font-bold"></div>
+                  <p className="font-bold text-emerald-900">دستخط ناظم</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-32 border-b border-emerald-900 mb-2 font-bold"></div>
+                  <p className="font-bold text-emerald-900">دستخط مہتمم</p>
                 </div>
               </div>
             </div>
-
-            {/* Decorative border elements */}
-            <div className="absolute top-8 left-8 w-16 h-16 border-t-8 border-l-8 border-emerald-900 rounded-tl-2xl"></div>
-            <div className="absolute top-8 right-8 w-16 h-16 border-t-8 border-r-8 border-emerald-900 rounded-tr-2xl"></div>
-            <div className="absolute bottom-8 left-8 w-16 h-16 border-b-8 border-l-8 border-emerald-900 rounded-bl-2xl"></div>
-            <div className="absolute bottom-8 right-8 w-16 h-16 border-b-8 border-r-8 border-emerald-900 rounded-br-2xl"></div>
-          </div>
         </div>
       )}
     </div>

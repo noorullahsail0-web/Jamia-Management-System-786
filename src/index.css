@@ -1,18 +1,85 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Nastaleeq+Urdu:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400..700&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@font-face {
+    font-family: 'Jameel Noori Nastaleeq';
+    src: local('Jameel Noori Nastaleeq'),
+         local('JameelNooriNastaleeq'),
+         url('https://cdn.jsdelivr.net/gh/alif-type/jameel-noori-nastaleeq@master/Jameel%20Noori%20Nastaleeq.woff2') format('woff2'),
+         url('https://cdn.jsdelivr.net/gh/alif-type/jameel-noori-nastaleeq@master/Jameel%20Noori%20Nastaleeq.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-  --font-urdu: "Noto Nastaleeq Urdu", "Amiri", serif;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-urdu: var(--urdu-font);
+  --font-sans: var(--sans-font);
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+}
+
+:root {
+  --urdu-font: "Noto Nastaliq Urdu", serif;
+  --sans-font: "Noto Nastaliq Urdu", "Inter", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --urdu-font: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
+    --sans-font: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Inter", system-ui, sans-serif;
+  }
 }
 
 @layer base {
-  body {
-    @apply font-sans text-gray-900;
+  html, body {
+    font-family: var(--sans-font);
+    @apply text-gray-900;
+    font-feature-settings: "kern" 1, "liga" 1;
+    line-height: 1.8;
   }
 }
 
 .font-urdu {
-  font-family: var(--font-urdu);
+  font-family: var(--urdu-font);
   line-height: 2.2;
 }

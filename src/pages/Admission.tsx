@@ -78,9 +78,10 @@ export default function Admission() {
       if (!isNaN(lastSerial)) nextSerial = lastSerial + 1;
     }
 
+    const classCodeStr = classCode.toString().padStart(2, '0');
     const serialStr = nextSerial.toString().padStart(2, '0');
     
-    return `${prefix}${year}-${classCode}-${serialStr}`;
+    return `${prefix}${year}-${classCodeStr}-${serialStr}`;
   };
 
   const onSubmit = async (data: any) => {
