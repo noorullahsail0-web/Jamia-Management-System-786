@@ -43,36 +43,46 @@ export default function IDGenerator() {
     setDownloadingPDF(true);
     try {
       const canvas = await html2canvas(cardsRef.current, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
-          onclone: (clonedDoc) => {
-            const elements = clonedDoc.getElementsByTagName('*');
-            for (let i = 0; i < elements.length; i++) {
-              const el = elements[i] as HTMLElement;
-              
-              // Strip problematic Tailwind 4 variables and styles that html2canvas cannot parse
-              el.style.color = '#000000';
-              el.style.backgroundColor = 'transparent';
-              el.style.borderColor = '#000000';
-              el.style.boxShadow = 'none';
-              el.style.textShadow = 'none';
-              el.style.backgroundImage = 'none';
-              
-              // Re-apply specific colors using hex
-              if (el.tagName === 'TH' || el.classList.contains('text-white')) {
-                el.style.color = '#ffffff';
-              } else if (el.classList.contains('text-emerald-700')) {
-                el.style.color = '#047857';
-              }
-              
-              if (el.tagName === 'TH' || el.classList.contains('bg-emerald-900')) {
-                el.style.backgroundColor = '#104d38';
-              } else if (el.classList.contains('bg-white')) {
-                el.style.backgroundColor = '#ffffff';
-              }
+        onclone: (clonedDoc) => {
+          const styleTags = clonedDoc.getElementsByTagName('style');
+          for (let i = 0; i < styleTags.length; i++) {
+            const tag = styleTags[i];
+            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
+               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
+               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
+               tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
             }
           }
+
+          const elements = clonedDoc.querySelectorAll('*');
+          elements.forEach((el) => {
+            if (el instanceof HTMLElement) {
+              const styleAttr = el.getAttribute('style');
+              if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
+              }
+
+              const compStyle = window.getComputedStyle(el);
+              if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
+                el.style.backgroundColor = '#ffffff';
+              }
+              if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
+                el.style.color = '#000000';
+              }
+              if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
+                el.style.borderColor = '#000000';
+              }
+
+              if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
+              if (el.classList.contains('text-emerald-700')) el.style.color = '#047857';
+              if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
+              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
+            }
+          });
+        }
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');

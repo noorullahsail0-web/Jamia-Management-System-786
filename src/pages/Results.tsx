@@ -373,64 +373,58 @@ export default function Results() {
     setDownloadingPDF(true);
     try {
       const canvas = await html2canvas(collectiveRef.current, {
-        scale: 4,
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
-          const elements = clonedDoc.getElementsByTagName('*');
-          for (let i = 0; i < elements.length; i++) {
-            const el = elements[i] as HTMLElement;
-            
-            // Remove transitions and shadows which often use oklch in Tailwind 4
-            el.style.transition = 'none';
-            el.style.animation = 'none';
-            el.style.boxShadow = 'none';
-            el.style.textShadow = 'none';
-
-            const classList = el.className;
-            if (typeof classList === 'string') {
-              // Text colors
-              if (classList.includes('text-white')) el.style.color = '#ffffff';
-              else if (classList.includes('text-emerald-900')) el.style.color = '#064e3b';
-              else if (classList.includes('text-emerald-700')) el.style.color = '#047857';
-              else if (classList.includes('text-red-700')) el.style.color = '#b91c1c';
-              else if (classList.includes('text-gray-600')) el.style.color = '#4b5563';
-              else if (classList.includes('text-gray-900')) el.style.color = '#111827';
-              
-              // Background colors
-              if (classList.includes('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
-              else if (classList.includes('bg-emerald-800')) el.style.backgroundColor = '#065f46';
-              else if (classList.includes('bg-emerald-600')) el.style.backgroundColor = '#059669';
-              else if (classList.includes('bg-emerald-50')) {
-                if (classList.includes('bg-emerald-50/20')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.2)';
-                else if (classList.includes('bg-emerald-50/30')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.3)';
-                else if (classList.includes('bg-emerald-50/50')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.5)';
-                else el.style.backgroundColor = '#ecfdf5';
-              }
-              else if (classList.includes('bg-red-600')) el.style.backgroundColor = '#dc2626';
-              else if (classList.includes('bg-gray-50')) el.style.backgroundColor = '#f9fafb';
-              else if (classList.includes('bg-gray-100')) el.style.backgroundColor = '#f3f4f6';
-              else if (classList.includes('bg-white')) el.style.backgroundColor = '#ffffff';
-
-              // Border colors
-              if (classList.includes('border-emerald-900')) {
-                if (classList.includes('border-emerald-900/20')) el.style.borderColor = 'rgba(6, 78, 59, 0.2)';
-                else if (classList.includes('border-emerald-900/10')) el.style.borderColor = 'rgba(6, 78, 59, 0.1)';
-                else el.style.borderColor = '#064e3b';
-              }
-              else if (classList.includes('border-emerald-800')) el.style.borderColor = '#065f46';
-              else if (classList.includes('border-gray-200')) el.style.borderColor = '#e5e7eb';
-              else if (classList.includes('border-gray-300')) el.style.borderColor = '#d1d5db';
-              else if (classList.includes('border-gray-100')) el.style.borderColor = '#f3f4f6';
+          const styleTags = clonedDoc.getElementsByTagName('style');
+          for (let i = 0; i < styleTags.length; i++) {
+            const tag = styleTags[i];
+            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
+               // Force hex for main Tailwind 4 color variables
+               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
+               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
+               tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
             }
           }
+
+          const elements = clonedDoc.querySelectorAll('*');
+          elements.forEach((el) => {
+            if (el instanceof HTMLElement) {
+              const styleAttr = el.getAttribute('style');
+              if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
+              }
+
+              const compStyle = window.getComputedStyle(el);
+              if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
+                el.style.backgroundColor = '#ffffff';
+              }
+              if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
+                el.style.color = '#000000';
+              }
+              if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
+                el.style.borderColor = '#000000';
+              }
+              
+              if (el.classList.contains('bg-emerald-950')) el.style.backgroundColor = '#022c22';
+              if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
+              if (el.classList.contains('bg-emerald-800')) el.style.backgroundColor = '#065f46';
+              if (el.classList.contains('text-emerald-950')) el.style.color = '#022c22';
+              if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
+              if (el.classList.contains('text-emerald-800')) el.style.color = '#065f46';
+              if (el.classList.contains('bg-emerald-50')) el.style.backgroundColor = '#ecfdf5';
+              if (el.classList.contains('bg-emerald-600')) el.style.backgroundColor = '#10b981';
+              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
+              if (el.classList.contains('border-emerald-950')) el.style.borderColor = '#022c22';
+            }
+          });
         }
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('l', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Collective_Result_${reportClass}_${examType}.pdf`);
     } catch (e) {
@@ -446,45 +440,52 @@ export default function Results() {
     setDownloadingPDF(true);
     try {
       const canvas = await html2canvas(individualRef.current, {
-        scale: 4,
+        scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
-          const elements = clonedDoc.getElementsByTagName('*');
-          for (let i = 0; i < elements.length; i++) {
-            const el = elements[i] as HTMLElement;
-            
-            el.style.transition = 'none';
-            el.style.animation = 'none';
-            el.style.boxShadow = 'none';
-            el.style.textShadow = 'none';
-
-            const classList = el.className;
-            if (typeof classList === 'string') {
-              if (classList.includes('text-white')) el.style.color = '#ffffff';
-              else if (classList.includes('text-emerald-900')) el.style.color = '#064e3b';
-              else if (classList.includes('text-emerald-700')) el.style.color = '#047857';
-              else if (classList.includes('text-red-700')) el.style.color = '#b91c1c';
-              else if (classList.includes('text-gray-600')) el.style.color = '#4b5563';
-              
-              if (classList.includes('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
-              else if (classList.includes('bg-emerald-800')) el.style.backgroundColor = '#065f46';
-              else if (classList.includes('bg-emerald-600')) el.style.backgroundColor = '#059669';
-              else if (classList.includes('bg-emerald-50')) {
-                if (classList.includes('bg-emerald-50/20')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.2)';
-                else if (classList.includes('bg-emerald-50/30')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.3)';
-                else if (classList.includes('bg-emerald-50/50')) el.style.backgroundColor = 'rgba(236, 253, 245, 0.5)';
-                else el.style.backgroundColor = '#ecfdf5';
-              }
-              else if (classList.includes('bg-gray-50')) el.style.backgroundColor = '#f9fafb';
-              else if (classList.includes('bg-white')) el.style.backgroundColor = '#ffffff';
-
-              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
-              else if (el.classList.contains('border-emerald-800')) el.style.borderColor = '#065f46';
-              else if (classList.includes('border-gray-200')) el.style.borderColor = '#e5e7eb';
-              else if (classList.includes('border-gray-300')) el.style.borderColor = '#d1d5db';
+          const styleTags = clonedDoc.getElementsByTagName('style');
+          for (let i = 0; i < styleTags.length; i++) {
+            const tag = styleTags[i];
+            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
+               // Force hex for main Tailwind 4 color variables
+               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
+               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
+               tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
             }
           }
+
+          const elements = clonedDoc.querySelectorAll('*');
+          elements.forEach((el) => {
+            if (el instanceof HTMLElement) {
+              const styleAttr = el.getAttribute('style');
+              if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
+              }
+
+              const compStyle = window.getComputedStyle(el);
+              if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
+                el.style.backgroundColor = '#ffffff';
+              }
+              if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
+                el.style.color = '#000000';
+              }
+              if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
+                el.style.borderColor = '#000000';
+              }
+              
+              if (el.classList.contains('bg-emerald-950')) el.style.backgroundColor = '#022c22';
+              if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
+              if (el.classList.contains('bg-emerald-800')) el.style.backgroundColor = '#065f46';
+              if (el.classList.contains('text-emerald-950')) el.style.color = '#022c22';
+              if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
+              if (el.classList.contains('text-emerald-800')) el.style.color = '#065f46';
+              if (el.classList.contains('bg-emerald-50')) el.style.backgroundColor = '#ecfdf5';
+              if (el.classList.contains('bg-emerald-600')) el.style.backgroundColor = '#10b981';
+              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
+              if (el.classList.contains('border-emerald-950')) el.style.borderColor = '#022c22';
+            }
+          });
         }
       });
       const imgData = canvas.toDataURL('image/png');

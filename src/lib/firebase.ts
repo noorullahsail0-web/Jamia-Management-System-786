@@ -6,6 +6,9 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
+console.log("Firebase Project ID:", firebaseConfig.projectId);
+console.log("Firestore Database ID:", firebaseConfig.firestoreDatabaseId || '(default)');
+
 // Initialize Firestore with long polling to bypass potential proxy/socket issues
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
@@ -14,22 +17,34 @@ export const db = initializeFirestore(app, {
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
-// Simple connection check without blocking
-async function testConnection() {
-  try {
-    // We use getDocFromServer to bypass cache and check real connectivity
-    const testDoc = doc(db, '_connection_test_', 'ping');
-    await Promise.race([
-      getDocFromServer(testDoc),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000))
-    ]);
-    console.log("Firebase connection established.");
-  } catch (error: any) {
-    console.warn("Firestore connection check failed (might be expected on first run):", error.message);
+// Simple connection check without blocking with longer timeout
+export async function testFirebaseConnection(retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      console.log(`Checking Firestore connection (attempt ${i + 1})...`);
+      // Use the path explicitly allowed for public read in firestore.rules
+      const testDoc = doc(db, 'test', 'connection');
+      await Promise.race([
+        getDocFromServer(testDoc).catch(err => {
+          // If it's "not-found" or "permission-denied", the server was reached!
+          if (err.code === 'not-found' || err.code === 'permission-denied') return;
+          throw err;
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 15000))
+      ]);
+      console.log("Firebase connection established successfully.");
+      return true;
+    } catch (error: any) {
+      console.warn(`Firestore connection attempt ${i + 1} failed:`, error.message);
+      if (i < retries) {
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait before retry
+      }
+    }
   }
+  return false;
 }
 
-testConnection();
+testFirebaseConnection();
 
 export enum OperationType {
   CREATE = 'create',

@@ -5,7 +5,9 @@ import {
   getDocs, 
   orderBy, 
   doc, 
-  updateDoc 
+  updateDoc,
+  deleteDoc,
+  where
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Student, Section } from '../types';
@@ -21,7 +23,8 @@ import {
   FileSpreadsheet,
   FileJson,
   X,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
@@ -40,6 +43,7 @@ export default function DakhilKharij() {
   
   // Withdrawal Modal State
   const [withdrawingStudent, setWithdrawingStudent] = useState<Student | null>(null);
+  const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [leavingDate, setLeavingDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [leavingReason, setLeavingReason] = useState('');
   const [leavingClass, setLeavingClass] = useState('');
@@ -105,6 +109,38 @@ export default function DakhilKharij() {
     }
   };
 
+  const handlePermanentDelete = async () => {
+    if (!deletingStudent) return;
+    
+    try {
+      setProcessing(true);
+      
+      // 1. Delete Attendance records
+      const attQ = query(collection(db, 'attendance'), where('studentId', '==', deletingStudent.id));
+      const attSnap = await getDocs(attQ);
+      const attDeletes = attSnap.docs.map(d => deleteDoc(d.ref));
+      
+      // 2. Delete Results
+      const resQ = query(collection(db, 'results'), where('studentId', '==', deletingStudent.id));
+      const resSnap = await getDocs(resQ);
+      const resDeletes = resSnap.docs.map(d => deleteDoc(d.ref));
+      
+      // 3. Delete Student document
+      const studentDelete = deleteDoc(doc(db, 'students', deletingStudent.id));
+      
+      await Promise.all([...attDeletes, ...resDeletes, studentDelete]);
+
+      alert('طالب علم کا مکمل ریکارڈ کامیابی سے ڈیلیٹ کر دیا گیا ہے۔');
+      setDeletingStudent(null);
+      fetchStudents();
+    } catch (error) {
+      console.error("Error deleting student record:", error);
+      alert('ریکارڈ ڈیلیٹ کرنے میں غلطی ہوئی۔');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const filteredStudents = students.filter(s => {
     const search = searchTerm.toLowerCase();
     const name = (s.name || '').toLowerCase();
@@ -128,59 +164,65 @@ export default function DakhilKharij() {
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
         const canvas = await html2canvas(page, {
-          scale: 4,
+          scale: 2,
           useCORS: true,
-          logging: false,
           backgroundColor: '#ffffff',
           onclone: (clonedDoc) => {
-            const elements = clonedDoc.getElementsByTagName('*');
-            for (let i = 0; i < elements.length; i++) {
-              const el = elements[i] as HTMLElement;
-              
-              // Strip problematic Tailwind 4 variables and styles that html2canvas cannot parse
-              el.style.color = '#000000';
-              el.style.backgroundColor = 'transparent';
-              el.style.borderColor = '#000000';
-              el.style.boxShadow = 'none';
-              el.style.textShadow = 'none';
-              el.style.backgroundImage = 'none';
-              
-              // Re-apply specific colors using hex
-              if (el.tagName === 'TH' || el.classList.contains('text-white')) {
-                el.style.color = '#ffffff';
-              } else if (el.classList.contains('text-emerald-700')) {
-                el.style.color = '#047857';
-              }
-              
-              if (el.tagName === 'TH' || el.classList.contains('bg-emerald-900')) {
-                el.style.backgroundColor = '#104d38';
-              } else if (el.classList.contains('bg-white')) {
-                el.style.backgroundColor = '#ffffff';
-              }
-
-              // Show print layout specific elements
-              if (el.classList.contains('print-header-active')) {
-                el.style.display = 'flex';
-                el.classList.remove('hidden');
+            const styleTags = clonedDoc.getElementsByTagName('style');
+            for (let i = 0; i < styleTags.length; i++) {
+              const tag = styleTags[i];
+              if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
+                 // Force hex for main Tailwind 4 color variables
+                 tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
+                 tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
+                 tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
               }
             }
+
+            const elements = clonedDoc.querySelectorAll('*');
+            elements.forEach((el) => {
+              if (el instanceof HTMLElement) {
+                const styleAttr = el.getAttribute('style');
+                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+                  el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
+                }
+
+                const compStyle = window.getComputedStyle(el);
+                if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
+                  el.style.backgroundColor = '#ffffff';
+                }
+                if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
+                  el.style.color = '#000000';
+                }
+                if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
+                  el.style.borderColor = '#000000';
+                }
+                
+                if (el.classList.contains('bg-emerald-950')) el.style.backgroundColor = '#022c22';
+                if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
+                if (el.classList.contains('bg-emerald-800')) el.style.backgroundColor = '#065f46';
+                if (el.classList.contains('text-emerald-950')) el.style.color = '#022c22';
+                if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
+                if (el.classList.contains('text-emerald-800')) el.style.color = '#065f46';
+                if (el.classList.contains('bg-emerald-50')) el.style.backgroundColor = '#ecfdf5';
+                if (el.classList.contains('bg-emerald-600')) el.style.backgroundColor = '#10b981';
+                if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
+                if (el.classList.contains('border-emerald-950')) el.style.borderColor = '#022c22';
+              }
+            });
           }
         });
         
         const imgData = canvas.toDataURL('image/png');
-        const imgProps = doc.getImageProperties(imgData);
         const pdfWidth = doc.internal.pageSize.getWidth();
         const pdfHeight = doc.internal.pageSize.getHeight();
         
-        const margin = 8; // 8mm margin
+        const margin = 8;
         const availableWidth = pdfWidth - (margin * 2);
-        const availableHeight = pdfHeight - (margin * 2);
-        
         const contentWidth = availableWidth;
-        const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
+        const contentHeight = (canvas.height * contentWidth) / canvas.width;
         
         if (i > 0) doc.addPage();
-        // Center vertically if needed, but top margin usually preferred
         doc.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
       }
       
@@ -378,14 +420,24 @@ export default function DakhilKharij() {
                       </span>
                     </td>
                     <td className="px-4 py-4 text-sm text-center">
-                      {s.status === 'active' && (
+                      <div className="flex justify-center gap-1">
+                        {s.status === 'active' && (
+                          <button
+                            onClick={() => setWithdrawingStudent(s)}
+                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                            title="خارج کریں"
+                          >
+                            <UserMinus className="w-5 h-5" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => setWithdrawingStudent(s)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors title='خارج کریں'"
+                          onClick={() => setDeletingStudent(s)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="مکمل ڈیلیٹ کریں"
                         >
-                          <UserMinus className="w-5 h-5" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -660,6 +712,71 @@ export default function DakhilKharij() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Permanent Delete Modal */}
+      {deletingStudent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-200">
+            <div className="bg-red-700 text-white p-6 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Trash2 className="w-6 h-6" />
+                <div>
+                  <h2 className="text-xl font-bold">مکمل ریکارڈ ڈیلیٹ کریں</h2>
+                  <p className="text-red-100 text-xs text-right">یہ عمل واپس نہیں کیا جا سکتا</p>
+                </div>
+              </div>
+              <button onClick={() => setDeletingStudent(null)} className="hover:bg-white/10 p-2 rounded-full transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center border-4 border-red-100">
+                  <AlertCircle className="w-10 h-10 text-red-600 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-gray-900">کیا آپ واقعی مطمئن ہیں؟</h3>
+                  <p className="text-gray-500 mt-2">
+                    آپ طالب علم <span className="font-bold text-red-600">"{deletingStudent.name}"</span> کا مکمل ڈیٹا ڈیلیٹ کر رہے ہیں۔
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-red-50 border border-red-100 p-4 rounded-2xl">
+                <ul className="text-sm text-red-800 space-y-2 list-disc list-inside font-bold">
+                  <li>تمام داخلہ ریکارڈ ختم ہو جائے گا</li>
+                  <li>تمام حاضری کا ریکارڈ حذف ہو جائے گا</li>
+                  <li>امتحانی نتائج مکمل طور پر ڈیلیٹ ہو جائیں گے</li>
+                </ul>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handlePermanentDelete}
+                  disabled={processing}
+                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2 text-lg"
+                >
+                  {processing ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <Trash2 className="w-6 h-6" />
+                      جی ہاں، مکمل ریکارڈ حذف کریں
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeletingStudent(null)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl transition-all"
+                >
+                  منسوخ کریں
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

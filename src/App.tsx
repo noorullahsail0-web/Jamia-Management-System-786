@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { testFirebaseConnection } from './lib/firebase';
 import { 
   Users, 
   ClipboardCheck, 
@@ -10,7 +11,10 @@ import {
   Menu, 
   X,
   CreditCard,
-  BookCopy
+  BookCopy,
+  WifiOff,
+  AlertTriangle,
+  RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -31,6 +35,28 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isFirestoreConnected, setIsFirestoreConnected] = useState(true);
+  const [checkingConnection, setCheckingConnection] = useState(false);
+
+  const checkConnection = async () => {
+    setCheckingConnection(true);
+    const isConnected = await testFirebaseConnection();
+    setIsFirestoreConnected(isConnected);
+    setCheckingConnection(false);
+  };
+
+  useEffect(() => {
+    checkConnection();
+    // Re-check periodically
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        testFirebaseConnection().then(isConnected => {
+          setIsFirestoreConnected(isConnected);
+        });
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -92,7 +118,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-hidden font-urdu" dir="rtl">
+    <div className="h-screen bg-gray-50 flex overflow-hidden font-urdu" dir="rtl">
       {/* Sidebar Overlay for Mobile */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -109,22 +135,29 @@ export default function App() {
       {/* Sidebar */}
       <aside 
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-72 bg-emerald-900 text-white transition-transform duration-300 transform lg:relative lg:translate-x-0 shadow-2xl",
-          !isSidebarOpen && "translate-x-full lg:hidden"
+          "fixed inset-y-0 right-0 z-50 bg-emerald-900 text-white transition-all duration-300 transform lg:relative lg:translate-x-0 shadow-2xl h-full",
+          isSidebarOpen ? "w-72" : "translate-x-full lg:translate-x-0 lg:w-20"
         )}
       >
-        <div className="p-6 flex flex-col h-full">
-          <div className="flex items-center gap-3 mb-10 pb-6 border-b border-emerald-800">
-            <div className="bg-white p-1 rounded-lg">
-              <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
+        <div className="p-4 flex flex-col h-full overflow-hidden">
+          <div className="flex items-center gap-3 mb-8 pb-4 border-b border-emerald-800">
+            <div className="bg-white p-1.5 rounded-xl shrink-0">
+              <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold">جامعہ تعلیم القرآن</h2>
-              <p className="text-xs text-emerald-300/60 uppercase tracking-wider">Management System</p>
+            <div className={cn("transition-all duration-300 origin-right overflow-hidden", !isSidebarOpen && "lg:w-0 lg:opacity-0")}>
+              <h2 className="text-xl font-bold whitespace-nowrap leading-none mb-1">جامعہ تعلیم القرآن</h2>
+              <p className="text-[10px] text-emerald-300/60 uppercase tracking-widest leading-none">Management System</p>
             </div>
           </div>
+          {/* Toggle Button for Desktop - Floating outside sidebar when closed */}
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="hidden lg:flex absolute -left-4 top-10 bg-emerald-600 p-2 rounded-full shadow-lg border-2 border-white hover:bg-emerald-700 transition-all z-50"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
 
-          <nav className="flex-1 space-y-2">
+          <nav className="flex-1 space-y-2 overflow-y-auto custom-scrollbar">
             {menuItems.map((item) => (
               <button
                 key={item.id}
@@ -145,7 +178,7 @@ export default function App() {
                   "w-5 h-5 transition-colors",
                   activeTab === item.id ? "text-white" : "text-emerald-400 group-hover:text-emerald-300"
                 )} />
-                <span className="font-medium">{item.label}</span>
+                <span className={cn("font-medium transition-all duration-300", !isSidebarOpen && "lg:hidden")}>{item.label}</span>
               </button>
             ))}
           </nav>
@@ -157,7 +190,7 @@ export default function App() {
                 className="w-10 h-10 rounded-full border-2 border-emerald-700"
                 alt="Profile"
               />
-              <div className="flex-1 overflow-hidden">
+              <div className={cn("flex-1 overflow-hidden transition-all duration-300", !isSidebarOpen && "lg:hidden")}>
                 <p className="text-sm font-semibold truncate">{user.displayName}</p>
                 <p className="text-xs text-emerald-400 truncate">{user.email}</p>
               </div>
@@ -166,8 +199,8 @@ export default function App() {
               onClick={logout}
               className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-emerald-100/70 hover:bg-red-500/10 hover:text-red-400 transition-all font-urdu"
             >
-              <LogOut className="w-5 h-5" />
-              <span>لاگ آؤٹ</span>
+              <LogOut className="w-5 h-5 flex-shrink-0" />
+              <span className={cn("transition-all duration-300", !isSidebarOpen && "lg:hidden")}>لاگ آؤٹ</span>
             </button>
           </div>
         </div>
@@ -189,7 +222,33 @@ export default function App() {
           </button>
         </header>
 
-        <div className="p-4 lg:p-10 max-w-7xl mx-auto">
+        <div className="p-4 lg:p-8 w-full">
+          {!isFirestoreConnected && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 bg-red-50 border-2 border-red-200 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm"
+            >
+              <div className="flex items-center gap-4 text-red-700">
+                <div className="bg-red-100 p-2 rounded-full">
+                  <WifiOff className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg">ڈیٹا بیس سے رابطہ منقطع ہے</h3>
+                  <p className="text-sm opacity-90">سسٹم انٹرنیٹ کے بغیر کام نہیں کر سکتا۔ براہ کرم اپنا نیٹ ورک چیک کریں۔</p>
+                </div>
+              </div>
+              <button 
+                onClick={checkConnection}
+                disabled={checkingConnection}
+                className="flex items-center gap-2 bg-red-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-red-700 transition-all disabled:opacity-50"
+              >
+                {checkingConnection ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <RefreshCcw className="w-5 h-5" />}
+                دوبارہ چیک کریں
+              </button>
+            </motion.div>
+          )}
+
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

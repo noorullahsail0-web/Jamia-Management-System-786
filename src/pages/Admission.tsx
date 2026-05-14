@@ -2,20 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { db, storage, handleFirestoreError, OperationType } from '../lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, limit, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Section, Student } from '../types';
 import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
-import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save } from 'lucide-react';
+import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save, Trash2, AlertCircle } from 'lucide-react';
 import { cn, compressImage } from '../lib/utils';
 
 export default function Admission() {
   const [students, setStudents] = useState<Student[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingInfo, setUploadingInfo] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+  const [processing, setProcessing] = useState(false);
   
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm();
   
@@ -87,26 +90,39 @@ export default function Admission() {
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
-      const classObj = CLASS_DATA[selectedSection].find(c => c.name === data.currentClass);
-      const regNo = await generateRegNo(data.section as Section, classObj?.code || '00');
-      
-      let photoUrl = '';
+      let photoUrl = photoPreview || '';
       if (selectedPhoto) {
         setUploadingInfo('تصویر تیار ہو رہی ہے...');
         photoUrl = await compressImage(selectedPhoto);
       }
 
-      setUploadingInfo('ڈیٹا محفوظ ہو رہا ہے...');
-      await addDoc(collection(db, 'students'), {
-        ...data,
-        regNo,
-        photoUrl,
-        isResident: data.isResident === 'true',
-        status: 'active',
-        createdAt: new Date().toISOString()
-      });
+      if (editingStudent) {
+        setUploadingInfo('ڈیٹا اپڈیٹ ہو رہا ہے...');
+        await updateDoc(doc(db, 'students', editingStudent.id), {
+          ...data,
+          photoUrl,
+          isResident: data.isResident === 'true',
+          updatedAt: new Date().toISOString()
+        });
+        alert('طالب علم کا ریکارڈ اپڈیٹ کر دیا گیا۔');
+      } else {
+        const classObj = CLASS_DATA[selectedSection].find(c => c.name === data.currentClass);
+        const regNo = await generateRegNo(data.section as Section, classObj?.code || '00');
+        
+        setUploadingInfo('ڈیٹا محفوظ ہو رہا ہے...');
+        await addDoc(collection(db, 'students'), {
+          ...data,
+          regNo,
+          photoUrl,
+          isResident: data.isResident === 'true',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        });
+        alert('نیا طالب علم کامیابی سے شامل کر لیا گیا۔');
+      }
 
       setShowForm(false);
+      setEditingStudent(null);
       reset();
       setSelectedPhoto(null);
       setPhotoPreview(null);
@@ -116,6 +132,54 @@ export default function Admission() {
     } finally {
       setLoading(false);
       setUploadingInfo(null);
+    }
+  };
+
+  const startEdit = (student: Student) => {
+    setEditingStudent(student);
+    setShowForm(true);
+    // Set form values
+    reset({
+      name: student.name,
+      fatherName: student.fatherName,
+      dob: student.dob,
+      cnic: student.cnic,
+      section: student.section,
+      currentClass: student.currentClass,
+      isResident: student.isResident.toString(),
+      address: student.address,
+      phone: student.phone,
+      admissionDate: student.admissionDate || student.createdAt?.split('T')[0]
+    });
+    setPhotoPreview(student.photoUrl || null);
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!deletingStudent) return;
+    try {
+      setProcessing(true);
+      
+      // 1. Delete Attendance records
+      const attQ = query(collection(db, 'attendance'), where('studentId', '==', deletingStudent.id));
+      const attSnap = await getDocs(attQ);
+      const attDeletes = attSnap.docs.map(d => deleteDoc(d.ref));
+      
+      // 2. Delete Results
+      const resQ = query(collection(db, 'results'), where('studentId', '==', deletingStudent.id));
+      const resSnap = await getDocs(resQ);
+      const resDeletes = resSnap.docs.map(d => deleteDoc(d.ref));
+      
+      // 3. Delete Student document
+      const studentDelete = deleteDoc(doc(db, 'students', deletingStudent.id));
+      
+      await Promise.all([...attDeletes, ...resDeletes, studentDelete]);
+      setDeletingStudent(null);
+      fetchStudents();
+    } catch (error) {
+      console.error(error);
+      alert('ریکارڈ ڈیلیٹ کرنے میں غلطی ہوئی۔');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -187,7 +251,21 @@ export default function Admission() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="text-gray-400 hover:text-emerald-600 font-medium">تفصیلات</button>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => startEdit(student)}
+                          className="text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg font-bold transition-all border border-emerald-100"
+                        >
+                          ایڈٹ کریں
+                        </button>
+                        <button 
+                          onClick={() => setDeletingStudent(student)}
+                          className="text-red-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg"
+                          title="مکمل ڈیلیٹ کریں"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -207,11 +285,11 @@ export default function Admission() {
           >
             <div className="p-8 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-3xl z-10 font-urdu">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">داخلہ فارم</h3>
-                <p className="text-gray-500 text-sm">نئے طالب علم کے اندراج کے لیے تمام معلومات درج کریں۔</p>
+                <h3 className="text-2xl font-bold text-gray-900">{editingStudent ? 'ایڈٹ طالب علم' : 'داخلہ فارم'}</h3>
+                <p className="text-gray-500 text-sm">طالب علم کی معلومات درج یا اپڈیٹ کریں۔</p>
               </div>
               <button 
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setEditingStudent(null); reset(); setSelectedPhoto(null); setPhotoPreview(null); }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-6 h-6 text-gray-400" />
@@ -309,7 +387,7 @@ export default function Admission() {
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">شعبہ</label>
-                  <select {...register('section', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right">
+                  <select {...register('section', { required: true })} disabled={!!editingStudent} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right disabled:opacity-50">
                     <option value="">شعبہ منتخب کریں</option>
                     {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -317,9 +395,9 @@ export default function Admission() {
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">کلاس</label>
-                  <select {...register('currentClass', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" disabled={!selectedSection}>
+                  <select {...register('currentClass', { required: true })} disabled={!!editingStudent} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right disabled:opacity-50">
                     <option value="">کلاس منتخب کریں</option>
-                    {selectedSection && CLASS_DATA[selectedSection].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    {selectedSection && CLASS_DATA[selectedSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
 
@@ -384,6 +462,58 @@ export default function Admission() {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Permanent Delete Modal */}
+      {deletingStudent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-100 font-urdu"
+            dir="rtl"
+          >
+            <div className="bg-red-700 text-white p-6 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Trash2 className="w-6 h-6" />
+                <h2 className="text-xl font-bold">مکمل ریکارڈ ڈیلیٹ کریں</h2>
+              </div>
+              <button onClick={() => setDeletingStudent(null)} className="hover:bg-white/10 p-2 rounded-full transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center border-4 border-red-100">
+                  <AlertCircle className="w-10 h-10 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">کیا آپ واقعی مکمل ریکارڈ ڈیلیٹ کرنا چاہتے ہیں؟</h3>
+                  <p className="text-gray-500 mt-2 text-sm">
+                    آپ طالب علم <span className="font-bold text-red-600">"{deletingStudent.name}"</span> کا داخلہ، حاضری اور نتائج سب کچھ ڈیلیٹ کر رہے ہیں۔ یہ عمل واپس نہیں ہو سکتا۔
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handlePermanentDelete}
+                  disabled={processing}
+                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+                >
+                  {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'جی ہاں، مکمل ریکارڈ حذف کریں'}
+                </button>
+                <button
+                  onClick={() => setDeletingStudent(null)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-all"
+                >
+                  منسوخ کریں
+                </button>
+              </div>
+            </div>
           </motion.div>
         </div>
       )}
