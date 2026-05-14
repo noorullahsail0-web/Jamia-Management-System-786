@@ -26,7 +26,7 @@ import {
   Loader2,
   Trash2
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, sanitizeHtml2Canvas } from '../lib/utils';
 import { format } from 'date-fns';
 import schoolName from '../assets/school_name.png';
 import * as XLSX from 'xlsx';
@@ -163,51 +163,50 @@ export default function DakhilKharij() {
       
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
-        const canvas = await html2canvas(page, {
+      const canvas = await html2canvas(page, {
           scale: 2,
           useCORS: true,
           backgroundColor: '#ffffff',
+          logging: false,
           onclone: (clonedDoc) => {
-            const styleTags = clonedDoc.getElementsByTagName('style');
-            for (let i = 0; i < styleTags.length; i++) {
-              const tag = styleTags[i];
-              if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
-                 // Force hex for main Tailwind 4 color variables
-                 tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
-                 tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
-                 tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
-              }
-            }
+            sanitizeHtml2Canvas(clonedDoc);
+
+            const colorMap: Record<string, string> = {
+              'bg-emerald-950': '#022c22',
+              'bg-emerald-900': '#064e3b',
+              'bg-emerald-800': '#065f46',
+              'bg-emerald-700': '#047857',
+              'bg-emerald-600': '#10b981',
+              'bg-emerald-50': '#ecfdf5',
+              'bg-emerald-50/20': 'rgba(236, 253, 245, 0.2)',
+              'bg-emerald-50/50': 'rgba(236, 253, 245, 0.5)',
+              'text-emerald-950': '#022c22',
+              'text-emerald-900': '#064e3b',
+              'text-emerald-700': '#047857',
+              'text-emerald-600': '#059669',
+              'border-emerald-900': '#104d38',
+              'border-emerald-800': '#065f46',
+              'border-gray-100': '#f3f4f6',
+              'border-gray-200': '#e5e7eb',
+              'print-header-active': 'display: flex'
+            };
 
             const elements = clonedDoc.querySelectorAll('*');
             elements.forEach((el) => {
               if (el instanceof HTMLElement) {
-                const styleAttr = el.getAttribute('style');
-                if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
-                  el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
-                }
-
-                const compStyle = window.getComputedStyle(el);
-                if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
-                  el.style.backgroundColor = '#ffffff';
-                }
-                if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
-                  el.style.color = '#000000';
-                }
-                if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
-                  el.style.borderColor = '#000000';
-                }
+                Object.entries(colorMap).forEach(([className, color]) => {
+                  if (el.classList.contains(className)) {
+                    if (className === 'print-header-active') el.style.display = 'flex';
+                    else if (className.startsWith('bg-')) el.style.backgroundColor = color;
+                    else if (className.startsWith('text-')) el.style.color = color;
+                    else if (className.startsWith('border-')) el.style.borderColor = color;
+                  }
+                });
                 
-                if (el.classList.contains('bg-emerald-950')) el.style.backgroundColor = '#022c22';
-                if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
-                if (el.classList.contains('bg-emerald-800')) el.style.backgroundColor = '#065f46';
-                if (el.classList.contains('text-emerald-950')) el.style.color = '#022c22';
-                if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
-                if (el.classList.contains('text-emerald-800')) el.style.color = '#065f46';
-                if (el.classList.contains('bg-emerald-50')) el.style.backgroundColor = '#ecfdf5';
-                if (el.classList.contains('bg-emerald-600')) el.style.backgroundColor = '#10b981';
-                if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
-                if (el.classList.contains('border-emerald-950')) el.style.borderColor = '#022c22';
+                if (el.tagName === 'TABLE') {
+                  el.style.borderCollapse = 'collapse';
+                  el.style.width = '100%';
+                }
               }
             });
           }
@@ -273,35 +272,35 @@ export default function DakhilKharij() {
   }
 
   return (
-    <div className="space-y-8 font-urdu" dir="rtl">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">رجسٹر داخل / خارج</h1>
-          <p className="text-gray-500 mt-1">جامعہ کے تمام طلباء کا مکمل ریکارڈ</p>
+    <div className="space-y-10 pb-10 font-urdu" dir="rtl">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 no-print">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight">داخلہ خارجہ ریکارڈ</h1>
+          <p className="text-gray-500 font-bold text-lg">تمام طلباء کی فہرست اور اکیڈمک ریکارڈ کا انتظام</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={downloadExcel}
-            className="flex items-center gap-2 bg-white border border-emerald-200 px-4 py-2 rounded-xl text-emerald-700 hover:bg-emerald-50 transition-all font-bold shadow-sm"
-          >
-            <FileSpreadsheet className="w-5 h-5" />
-            ایکسل ڈاؤن لوڈ
-          </button>
-          <button
-            onClick={downloadPDF}
-            disabled={downloadingPDF}
-            className="flex items-center gap-2 bg-white border border-red-200 px-4 py-2 rounded-xl text-red-700 hover:bg-red-50 transition-all font-bold shadow-sm disabled:opacity-50"
-          >
-            {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileJson className="w-5 h-5" />}
-            پی ڈی ایف ڈاؤن لوڈ
-          </button>
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 bg-emerald-900 text-white px-6 py-2 rounded-xl hover:bg-emerald-800 transition-all font-bold shadow-lg shadow-emerald-200"
-          >
-            <Printer className="w-5 h-5" />
-            پرنٹ کریں (A4)
-          </button>
+        <div className="flex bg-[#022c22] p-1.5 rounded-2xl border border-white/5 shadow-premium">
+           <button 
+             onClick={downloadExcel}
+             className="px-6 py-3 rounded-xl font-bold text-base transition-all text-emerald-100/70 hover:text-white hover:bg-white/5 flex items-center gap-2"
+           >
+             <FileSpreadsheet className="w-5 h-5" />
+             <span>ایکسل فائل</span>
+           </button>
+           <button 
+             onClick={downloadPDF}
+             disabled={downloadingPDF}
+             className="px-6 py-3 rounded-xl font-bold text-base transition-all text-emerald-100/70 hover:text-white hover:bg-white/5 flex items-center gap-2"
+           >
+             {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+             <span>پی ڈی ایف</span>
+           </button>
+           <button 
+             onClick={handlePrint}
+             className="px-6 py-3 rounded-xl font-bold text-base transition-all bg-emerald-600 text-white shadow-lg hover:bg-emerald-500 flex items-center gap-2"
+           >
+             <Printer className="w-5 h-5" />
+             <span>پرنٹ کریں (A4)</span>
+           </button>
         </div>
       </div>
 
@@ -337,38 +336,40 @@ export default function DakhilKharij() {
       </div>
 
       {/* Filters - Hidden on Print */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap gap-4 no-print">
-        <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="نام یا رجسٹریشن نمبر سے تلاش کریں..."
-            className="w-full pr-10 pl-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 flex flex-wrap gap-6 no-print">
+        <div className="flex-1 min-w-[300px] relative">
+          <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="نام، رجسٹریشن نمبر یا ولدیت سے تلاش کریں..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-6 pr-14 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
           />
         </div>
-        <select
-          className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-          value={selectedSection}
-          onChange={(e) => setSelectedSection(e.target.value as any)}
-        >
-          <option value="all">تمام سیکشنز</option>
-          {Object.values(Section).map(s => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <select
-          className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value as any)}
-        >
-          <option value="all">تمام (Active/Left)</option>
-          <option value="active">صرف موجودہ طلباء</option>
-          <option value="left">صرف خارج شدہ طلباء</option>
-        </select>
-        <div className="flex items-center px-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-sm">
-          کل طلبہ: {filteredStudents.length} / {students.length}
+        <div className="min-w-[200px]">
+          <select 
+            value={selectedSection} 
+            onChange={(e) => setSelectedSection(e.target.value as any)}
+            className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
+          >
+            <option value="all">تمام سیکشنز</option>
+            {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="min-w-[200px]">
+          <select 
+            value={selectedStatus} 
+            onChange={(e) => setSelectedStatus(e.target.value as any)}
+            className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
+          >
+            <option value="all">تمام طلباء</option>
+            <option value="active">صرف موجودہ طلباء</option>
+            <option value="left">صرف خارج شدہ طلباء</option>
+          </select>
+        </div>
+        <div className="flex items-center px-8 bg-emerald-700 text-white rounded-2xl font-black text-base shadow-lg shadow-emerald-900/10">
+          کل طلبہ: {filteredStudents.length}
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'fire
 import { Section, Student, AttendanceRecord } from '../types';
 import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
 import { ClipboardCheck, UserCheck, UserX, UserMinus, Send, Loader2, Calendar as CalendarIcon, CheckCircle2, Printer, FileText, Download, FileSpreadsheet } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, sanitizeHtml2Canvas } from '../lib/utils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -68,50 +68,40 @@ export default function Attendance() {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        logging: false,
         onclone: (clonedDoc) => {
-          const styleTags = clonedDoc.getElementsByTagName('style');
-          for (let i = 0; i < styleTags.length; i++) {
-            const tag = styleTags[i];
-            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
-               // Use a very aggressive regex to replace any color function starting with ok
-               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
-               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
-               // Also catch variables
-               tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
-            }
-          }
+          sanitizeHtml2Canvas(clonedDoc);
+
+          const colorMap: Record<string, string> = {
+            'bg-emerald-950': '#022c22',
+            'bg-emerald-900': '#064e3b',
+            'bg-emerald-800': '#065f46',
+            'bg-emerald-700': '#047857',
+            'bg-emerald-600': '#10b981',
+            'bg-emerald-50': '#ecfdf5',
+            'text-emerald-950': '#022c22',
+            'text-emerald-900': '#064e3b',
+            'text-emerald-800': '#065f46',
+            'text-emerald-700': '#047857',
+            'border-emerald-900': '#064e3b',
+            'border-gray-100': '#f3f4f6',
+            'border-gray-200': '#e5e7eb'
+          };
 
           const elements = clonedDoc.querySelectorAll('*');
           elements.forEach((el) => {
             if (el instanceof HTMLElement) {
-              // Explicitly strip any inline style properties that might contain ok colors
-              const styleAttr = el.getAttribute('style');
-              if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
-                el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
-              }
+              Object.entries(colorMap).forEach(([className, color]) => {
+                if (el.classList.contains(className)) {
+                  if (className.startsWith('bg-')) el.style.backgroundColor = color;
+                  if (className.startsWith('text-')) el.style.color = color;
+                  if (className.startsWith('border-')) el.style.borderColor = color;
+                }
+              });
 
-              // Also check computed styles and overwrite them if they contain ok colors
-              const compStyle = window.getComputedStyle(el);
-              if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
-                el.style.backgroundColor = '#ffffff';
+              if (el.tagName === 'TABLE') {
+                el.style.borderCollapse = 'collapse';
               }
-              if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
-                el.style.color = '#000000';
-              }
-              if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
-                el.style.borderColor = '#000000';
-              }
-              
-              if (el.classList.contains('bg-emerald-950')) el.style.backgroundColor = '#022c22';
-              if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
-              if (el.classList.contains('bg-emerald-800')) el.style.backgroundColor = '#065f46';
-              if (el.classList.contains('text-emerald-950')) el.style.color = '#022c22';
-              if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
-              if (el.classList.contains('text-emerald-800')) el.style.color = '#065f46';
-              if (el.classList.contains('bg-emerald-50')) el.style.backgroundColor = '#ecfdf5';
-              if (el.classList.contains('bg-emerald-600')) el.style.backgroundColor = '#10b981';
-              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
-              if (el.classList.contains('border-emerald-950')) el.style.borderColor = '#022c22';
             }
           });
         }
@@ -234,22 +224,23 @@ export default function Attendance() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl shadow-xl shadow-gray-100 border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-2 text-right">
-          <label className="text-sm font-bold text-gray-700">سیکشن منتخب کریں</label>
-          <select value={section} onChange={(e) => { setSection(e.target.value as Section); setCurrentClass(''); }} className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-bold">
-            <option value="">سیکشن منتخب کریں</option>
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="space-y-3 text-right">
+          <label className="text-sm font-black text-emerald-900 pr-2">سیکشن منتخب کریں</label>
+          <select value={section} onChange={(e) => { setSection(e.target.value as Section); setCurrentClass(''); }} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg">
+            <option value="">انتخاب کریں</option>
             {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <div className="space-y-2 text-right">
-          <label className="text-sm font-bold text-gray-700">درجہ منتخب کریں</label>
-          <select value={currentClass} onChange={(e) => setCurrentClass(e.target.value)} disabled={!section} className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-bold disabled:opacity-50">
-            <option value="">درجہ منتخب کریں</option>
+        <div className="space-y-3 text-right">
+          <label className="text-sm font-black text-emerald-900 pr-2">درجہ منتخب کریں</label>
+          <select value={currentClass} onChange={(e) => setCurrentClass(e.target.value)} disabled={!section} className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg disabled:opacity-50">
+            <option value="">انتخاب کریں</option>
             {section && CLASS_DATA[section as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
-        <div className="space-y-2 text-right">
+        <div className="space-y-3 text-right">
+          <label className="text-sm font-black text-emerald-900 pr-2">{viewMode === 'daily' ? 'تاریخ' : 'ماہ و سال'}</label>
           {viewMode === 'daily' ? (
             <div className="relative">
               <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -271,39 +262,59 @@ export default function Attendance() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-emerald-600" />
-          <p className="text-gray-500 font-bold animate-pulse">ڈیٹا لوڈ ہو رہا ہے...</p>
+          <p className="text-gray-500 font-black animate-pulse">ڈیٹا لوڈ ہو رہا ہے...</p>
         </div>
       ) : students.length > 0 ? (
         viewMode === 'daily' ? (
-          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white rounded-3xl shadow-xl shadow-gray-100 border border-gray-100 overflow-hidden">
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white rounded-[2.5rem] shadow-premium border border-gray-100 overflow-hidden">
               <table className="w-full text-right">
                 <thead>
                   <tr className="bg-emerald-950 text-white">
-                    <th className="px-4 md:px-8 py-5 font-black text-lg text-right">طالب علم</th>
-                    <th className="px-4 md:px-8 py-5 font-black text-lg text-center">حاضری</th>
-                    <th className="px-4 md:px-8 py-5 font-black text-lg text-right">اطلاع</th>
+                    <th className="px-8 py-6 font-black text-xl text-right">طالب علم</th>
+                    <th className="px-8 py-6 font-black text-xl text-center">حاضری کا اسٹیٹس</th>
+                    <th className="px-8 py-6 font-black text-xl text-right">فوری اطلاع</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-emerald-50/30 transition-colors">
-                      <td className="px-4 md:px-8 py-5">
-                        <p className="font-black text-emerald-950 text-base md:text-lg">{student.name}</p>
-                        <p className="text-[10px] md:text-sm font-bold text-gray-500">{student.fatherName} • {student.regNo}</p>
+                    <tr key={student.id} className="hover:bg-emerald-50/30 transition-colors group">
+                      <td className="px-8 py-6">
+                        <p className="font-black text-emerald-950 text-lg group-hover:text-emerald-700 transition-colors">{student.name}</p>
+                        <p className="text-sm font-bold text-gray-400 mt-0.5">{student.fatherName} • {student.regNo}</p>
                       </td>
-                      <td className="px-2 md:px-8 py-5 text-center">
-                        <div className="flex justify-center items-center gap-1 md:gap-3">
-                          {['present', 'absent', 'leave'].map((v) => (
-                            <button key={v} onClick={() => handleStatusChange(student.id, v as any)} className={cn("p-2 md:p-3 rounded-xl transition-all w-16 md:w-28", attendanceMap[student.id] === v ? "bg-emerald-600 text-white" : "text-gray-400 hover:bg-gray-100")}>
-                              {v === 'present' ? 'حاضر' : v === 'absent' ? 'غیر حاضر' : 'چھٹی'}
+                      <td className="px-8 py-6">
+                        <div className="flex justify-center items-center gap-3">
+                          {[
+                            { id: 'present', label: 'حاضر', color: 'bg-emerald-500' },
+                            { id: 'absent', label: 'غیر حاضر', color: 'bg-red-500' },
+                            { id: 'leave', label: 'رخصت', color: 'bg-amber-500' }
+                          ].map((v) => (
+                            <button 
+                              key={v.id} 
+                              onClick={() => handleStatusChange(student.id, v.id as any)} 
+                              className={cn(
+                                "px-6 py-3 rounded-2xl transition-all font-black text-base border-2",
+                                attendanceMap[student.id] === v.id 
+                                  ? `${v.color} text-white border-transparent shadow-lg scale-105` 
+                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                              )}
+                            >
+                               {v.label}
                             </button>
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 md:px-8 py-5 text-right">
+                      <td className="px-8 py-6 text-right">
                         {attendanceMap[student.id] !== 'present' && (
-                          <a href={getWhatsAppLink(student, attendanceMap[student.id] as any)} target="_blank" rel="noreferrer" className="text-emerald-700 bg-emerald-50 px-4 py-2 rounded-lg font-bold">اطلاع بھیجیں</a>
+                          <a 
+                            href={getWhatsAppLink(student, attendanceMap[student.id] as any)} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="inline-flex items-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-6 py-3 rounded-xl font-black transition-all border border-emerald-100 shadow-sm"
+                          >
+                            واٹس ایپ اطلاع
+                          </a>
                         )}
                       </td>
                     </tr>
@@ -311,8 +322,12 @@ export default function Attendance() {
                 </tbody>
               </table>
             </div>
-            <button onClick={saveAttendance} disabled={saving} className="w-full md:w-auto bg-emerald-600 text-white font-black py-4 px-12 rounded-2xl shadow-xl">
-              {saving ? 'محفوظ ہو رہا ہے...' : (savedSuccess ? 'محفوظ ہوگئی!' : 'حاضری محفوظ کریں')}
+            <button 
+              onClick={saveAttendance} 
+              disabled={saving} 
+              className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl py-5 px-16 rounded-[2rem] shadow-xl shadow-emerald-900/10 transition-all disabled:opacity-50"
+            >
+              {saving ? 'محفوظ ہو رہا ہے...' : (savedSuccess ? 'کامیابی سے محفوظ ہو گیا!' : 'حاضری محفوظ کریں')}
             </button>
           </div>
         ) : (
@@ -340,38 +355,42 @@ export default function Attendance() {
               <div 
                 id="print-area" 
                 ref={printRef} 
-                className="pt-2 px-12 pb-12 min-w-[1100px] bg-white mx-auto shadow-sm border border-gray-100" 
+                className="pt-1 px-8 pb-12 min-w-[1100px] bg-white mx-auto shadow-sm border border-gray-100" 
                 style={{ direction: 'rtl', width: '297mm', fontFamily: 'system-ui' }}
               >
-                <div className="w-full mb-2">
-                  <div className="text-center mb-1">
-                    <h1 className="text-5xl font-bold text-black" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>حاضری رجسٹر</h1>
-                  </div>
-                  
-                  <div className="flex justify-between items-end border-b-2 border-black pb-1 px-2 text-xl font-bold text-black" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
-                    <div className="text-2xl font-bold">
+                <div className="w-full mb-6 border-b-2 border-emerald-900 pb-4">
+                  <div className="flex justify-between items-center bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                    <div className="text-xl font-black text-emerald-900" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
                       جامعہ تعلیم القرآن ناگمان ضلع پشاور
                     </div>
-
-                    <div className="flex gap-12">
-                      <div className="flex gap-2">
-                        <span className="whitespace-nowrap">سیکشن:</span>
-                        <span className="px-1">{section}</span>
+                    <div className="text-center">
+                      <h1 className="text-4xl font-black text-black mb-1" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>حاضری رجسٹر</h1>
+                      <div className="px-6 py-1 bg-emerald-600 text-white rounded-full text-sm font-bold shadow-sm inline-block uppercase">Attendance Register</div>
+                    </div>
+                    <div className="text-left space-y-1">
+                      <div className="text-xs font-bold text-gray-400">تاریخ طباعت: {format(new Date(), 'dd/MM/yyyy')}</div>
+                      <div className="text-xs font-bold text-emerald-700">سسٹم جنریٹڈ ریکارڈ</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center mt-4 px-4 text-base font-bold text-gray-700" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
+                    <div className="flex gap-10">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-900 bg-emerald-100 px-3 py-1 rounded-lg">سیکشن:</span>
+                        <span className="font-black text-lg">{section}</span>
                       </div>
-                      <div className="flex gap-2">
-                        <span className="whitespace-nowrap">درجہ:</span>
-                        <span className="px-1">{currentClass}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-900 bg-emerald-100 px-3 py-1 rounded-lg">درجہ:</span>
+                        <span className="font-black text-lg">{currentClass}</span>
                       </div>
-                      <div className="flex gap-2">
-                        <span className="whitespace-nowrap">کوڈ:</span>
-                        <span className="px-1 font-sans">
-                          DN{selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-900 bg-emerald-100 px-3 py-1 rounded-lg">ماہ:</span>
+                        <span className="font-black text-lg">{URDU_MONTHS[selectedMonth]} {selectedYear}</span>
                       </div>
-                      <div className="flex gap-2">
-                        <span className="whitespace-nowrap">ماہ:</span>
-                        <span className="px-1">{URDU_MONTHS[selectedMonth]} {selectedYear}</span>
-                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">کوڈ:</span>
+                      <span className="font-sans font-black text-emerald-900">DN{selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}</span>
                     </div>
                   </div>
                 </div>

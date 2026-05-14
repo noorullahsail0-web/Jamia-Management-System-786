@@ -15,6 +15,12 @@
 @theme {
   --font-urdu: var(--urdu-font);
   --font-sans: var(--sans-font);
+  
+  /* Refined Islamic Institution Palette */
+  --color-primary: #064e3b; /* Deep Emerald */
+  --color-primary-light: #10b981;
+  --color-accent: #f59e0b; /* Amber/Gold */
+  
   --color-emerald-50: #ecfdf5;
   --color-emerald-100: #d1fae5;
   --color-emerald-200: #a7f3d0;
@@ -25,6 +31,8 @@
   --color-emerald-700: #047857;
   --color-emerald-800: #065f46;
   --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+  
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
@@ -35,6 +43,7 @@
   --color-gray-700: #374151;
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
+  
   --color-red-50: #fef2f2;
   --color-red-100: #fee2e2;
   --color-red-200: #fecaca;
@@ -43,9 +52,8 @@
   --color-red-500: #ef4444;
   --color-red-600: #dc2626;
   --color-red-700: #b91c1c;
-  --color-white: #ffffff;
-  --color-black: #000000;
-  --color-transparent: transparent;
+
+  --shadow-premium: 0 10px 30px -5px rgba(2, 44, 34, 0.1), 0 4px 12px -4px rgba(2, 44, 34, 0.05);
 }
 
 :root {
@@ -73,7 +81,7 @@
 @layer base {
   html, body {
     font-family: var(--sans-font);
-    @apply text-gray-900;
+    @apply text-gray-900 bg-gray-50;
     font-feature-settings: "kern" 1, "liga" 1;
     line-height: 1.8;
   }
@@ -84,17 +92,21 @@
   line-height: 2.2;
 }
 
+.shadow-premium {
+  box-shadow: var(--shadow-premium);
+}
+
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-emerald-800/50 rounded-full;
+    @apply bg-emerald-900/20 rounded-full;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-emerald-700;
+    @apply bg-emerald-900/40;
   }
 }

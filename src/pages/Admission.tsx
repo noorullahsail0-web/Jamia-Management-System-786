@@ -350,17 +350,17 @@ export default function Admission() {
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">طالب علم کا نام</label>
-                  <input {...register('name', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" placeholder="مثلاً احمد علی" />
+                  <input {...register('name', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" placeholder="مثلاً احمد علی" />
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">والد کا نام</label>
-                  <input {...register('fatherName', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" placeholder="مثلاً احمد خان" />
+                  <input {...register('fatherName', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" placeholder="مثلاً احمد خان" />
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">تاریخ پیدائش</label>
-                  <input {...register('dob', { required: true })} type="date" className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" />
+                  <input {...register('dob', { required: true })} type="date" className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" />
                 </div>
 
                 <div className="space-y-2">
@@ -380,14 +380,14 @@ export default function Admission() {
                       
                       setValue('cnic', formatted);
                     }}
-                    className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right font-mono" 
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-mono font-bold" 
                     placeholder="XXXXX-XXXXXXX-X" 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">شعبہ</label>
-                  <select {...register('section', { required: true })} disabled={!!editingStudent} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right disabled:opacity-50">
+                  <select {...register('section', { required: true })} disabled={!!editingStudent} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold disabled:opacity-50">
                     <option value="">شعبہ منتخب کریں</option>
                     {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -395,7 +395,7 @@ export default function Admission() {
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">کلاس</label>
-                  <select {...register('currentClass', { required: true })} disabled={!!editingStudent} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right disabled:opacity-50">
+                  <select {...register('currentClass', { required: true })} disabled={!!editingStudent} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold disabled:opacity-50">
                     <option value="">کلاس منتخب کریں</option>
                     {selectedSection && CLASS_DATA[selectedSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
@@ -428,17 +428,17 @@ export default function Admission() {
 
                 <div className="md:col-span-2 space-y-2">
                   <label className="block text-right font-medium text-gray-700">مستقل پتہ</label>
-                  <textarea {...register('address', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" rows={2} placeholder="گلی، محلہ، شہر"></textarea>
+                  <textarea {...register('address', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" rows={2} placeholder="گلی، محلہ، شہر"></textarea>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">سرپرست کا فون نمبر</label>
-                  <input {...register('phone', { required: true })} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" placeholder="03XXXXXXXXX" />
+                  <input {...register('phone', { required: true })} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" placeholder="03XXXXXXXXX" />
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-right font-medium text-gray-700">تاریخ داخلہ</label>
-                  <input {...register('admissionDate', { required: true })} type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 bg-[#e8eaf6]/50 border-none rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg text-right" />
+                  <input {...register('admissionDate', { required: true })} type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" />
                 </div>
               </div>
 

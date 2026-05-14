@@ -5,7 +5,7 @@ import { collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, 
 import { Section, Student, ExamResult, ExamType } from '../types';
 import { CLASS_DATA } from '../constants';
 import { GraduationCap, Search, Save, FileText, ChevronRight, Loader2, Info, FileSpreadsheet, Download } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, sanitizeHtml2Canvas } from '../lib/utils';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -372,61 +372,61 @@ export default function Results() {
     if (!collectiveRef.current) return;
     setDownloadingPDF(true);
     try {
+      await document.fonts.ready;
       const canvas = await html2canvas(collectiveRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        logging: false,
         onclone: (clonedDoc) => {
-          const styleTags = clonedDoc.getElementsByTagName('style');
-          for (let i = 0; i < styleTags.length; i++) {
-            const tag = styleTags[i];
-            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
-               // Force hex for main Tailwind 4 color variables
-               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
-               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
-               tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
-            }
-          }
+          sanitizeHtml2Canvas(clonedDoc);
+
+          const colorMap: Record<string, string> = {
+            'bg-emerald-950': '#022c22',
+            'bg-emerald-900': '#064e3b',
+            'bg-emerald-800': '#065f46',
+            'bg-emerald-700': '#047857',
+            'bg-emerald-600': '#10b981',
+            'bg-emerald-50': '#ecfdf5',
+            'bg-emerald-50/20': 'rgba(236, 253, 245, 0.2)',
+            'bg-emerald-50/50': 'rgba(236, 253, 245, 0.5)',
+            'bg-emerald-100/50': 'rgba(209, 250, 229, 0.5)',
+            'text-emerald-950': '#022c22',
+            'text-emerald-900': '#064e3b',
+            'text-emerald-700': '#047857',
+            'text-emerald-600': '#059669',
+            'border-emerald-900': '#104d38',
+            'border-emerald-800': '#065f46',
+            'border-emerald-100': '#d1fae5',
+            'border-gray-100': '#f3f4f6',
+            'border-gray-200': '#e5e7eb'
+          };
 
           const elements = clonedDoc.querySelectorAll('*');
           elements.forEach((el) => {
             if (el instanceof HTMLElement) {
-              const styleAttr = el.getAttribute('style');
-              if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
-                el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
-              }
+              Object.entries(colorMap).forEach(([className, color]) => {
+                if (el.classList.contains(className)) {
+                  if (className.startsWith('bg-')) el.style.backgroundColor = color;
+                  if (className.startsWith('text-')) el.style.color = color;
+                  if (className.startsWith('border-')) el.style.borderColor = color;
+                }
+              });
 
-              const compStyle = window.getComputedStyle(el);
-              if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
-                el.style.backgroundColor = '#ffffff';
+              // Force basic layout fixes for html2canvas
+              if (el.tagName === 'TABLE') {
+                el.style.borderCollapse = 'collapse';
               }
-              if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
-                el.style.color = '#000000';
-              }
-              if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
-                el.style.borderColor = '#000000';
-              }
-              
-              if (el.classList.contains('bg-emerald-950')) el.style.backgroundColor = '#022c22';
-              if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
-              if (el.classList.contains('bg-emerald-800')) el.style.backgroundColor = '#065f46';
-              if (el.classList.contains('text-emerald-950')) el.style.color = '#022c22';
-              if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
-              if (el.classList.contains('text-emerald-800')) el.style.color = '#065f46';
-              if (el.classList.contains('bg-emerald-50')) el.style.backgroundColor = '#ecfdf5';
-              if (el.classList.contains('bg-emerald-600')) el.style.backgroundColor = '#10b981';
-              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
-              if (el.classList.contains('border-emerald-950')) el.style.borderColor = '#022c22';
             }
           });
         }
       });
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF('l', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Collective_Result_${reportClass}_${examType}.pdf`);
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      pdf.save(`Collective_Result_${reportClass}_${examType}_${new Date().getTime()}.pdf`);
     } catch (e) {
       console.error(e);
       alert('پی ڈی ایف ڈاؤن لوڈ کرنے میں غلطی ہوئی۔');
@@ -443,57 +443,47 @@ export default function Results() {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        logging: false,
         onclone: (clonedDoc) => {
-          const styleTags = clonedDoc.getElementsByTagName('style');
-          for (let i = 0; i < styleTags.length; i++) {
-            const tag = styleTags[i];
-            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
-               // Force hex for main Tailwind 4 color variables
-               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^)]*\)/gi, '#10b981');
-               tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\s*\([^\)]+\)/gi, '#10b981');
-               tag.innerHTML = tag.innerHTML.replace(/--([a-zA-Z0-9-]+)\s*:\s*[^;}]*(oklch|oklab)[^;}]*;/gi, '--$1: #10b981;');
-            }
-          }
+          sanitizeHtml2Canvas(clonedDoc);
+
+          const colorMap: Record<string, string> = {
+            'bg-emerald-950': '#022c22',
+            'bg-emerald-900': '#064e3b',
+            'bg-emerald-700': '#047857',
+            'bg-emerald-600': '#10b981',
+            'bg-emerald-50': '#ecfdf5',
+            'bg-emerald-50/10': 'rgba(236, 253, 245, 0.1)',
+            'bg-emerald-50/50': 'rgba(236, 253, 245, 0.5)',
+            'text-emerald-950': '#022c22',
+            'text-emerald-900': '#064e3b',
+            'text-emerald-700': '#047857',
+            'border-emerald-900': '#022c22',
+            'border-emerald-100': '#d1fae5',
+            'border-emerald-200': '#a7f3d0'
+          };
 
           const elements = clonedDoc.querySelectorAll('*');
           elements.forEach((el) => {
             if (el instanceof HTMLElement) {
-              const styleAttr = el.getAttribute('style');
-              if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
-                el.setAttribute('style', styleAttr.replace(/(oklch|oklab)\s*\([^;}]*\)/gi, '#10b981'));
-              }
-
-              const compStyle = window.getComputedStyle(el);
-              if (compStyle.backgroundColor.includes('ok') || compStyle.backgroundColor.includes('oklch') || compStyle.backgroundColor.includes('oklab')) {
-                el.style.backgroundColor = '#ffffff';
-              }
-              if (compStyle.color.includes('ok') || compStyle.color.includes('oklch') || compStyle.color.includes('oklab')) {
-                el.style.color = '#000000';
-              }
-              if (compStyle.borderColor.includes('ok') || compStyle.borderColor.includes('oklch') || compStyle.borderColor.includes('oklab')) {
-                el.style.borderColor = '#000000';
-              }
-              
-              if (el.classList.contains('bg-emerald-950')) el.style.backgroundColor = '#022c22';
-              if (el.classList.contains('bg-emerald-900')) el.style.backgroundColor = '#064e3b';
-              if (el.classList.contains('bg-emerald-800')) el.style.backgroundColor = '#065f46';
-              if (el.classList.contains('text-emerald-950')) el.style.color = '#022c22';
-              if (el.classList.contains('text-emerald-900')) el.style.color = '#064e3b';
-              if (el.classList.contains('text-emerald-800')) el.style.color = '#065f46';
-              if (el.classList.contains('bg-emerald-50')) el.style.backgroundColor = '#ecfdf5';
-              if (el.classList.contains('bg-emerald-600')) el.style.backgroundColor = '#10b981';
-              if (el.classList.contains('border-emerald-900')) el.style.borderColor = '#064e3b';
-              if (el.classList.contains('border-emerald-950')) el.style.borderColor = '#022c22';
+              Object.entries(colorMap).forEach(([className, color]) => {
+                if (el.classList.contains(className)) {
+                  if (className.startsWith('bg-')) el.style.backgroundColor = color;
+                  if (className.startsWith('text-')) el.style.color = color;
+                  if (className.startsWith('border-')) el.style.borderColor = color;
+                }
+              });
             }
           });
         }
       });
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF('p', 'mm', [155, 215]); // 15.5cm x 21.5cm
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Report_Card_${student?.name}_${examType}.pdf`);
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const margin = 5;
+      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
+      pdf.save(`Report_Card_${student?.name}_${examType}_${new Date().getTime()}.pdf`);
     } catch (e) {
       console.error(e);
       alert('پی ڈی ایف ڈاؤن لوڈ کرنے میں غلطی ہوئی۔');
@@ -544,39 +534,39 @@ export default function Results() {
           <p className="font-bold">ڈیٹا بیس سے رابطہ منقطع ہے۔ براہ کرم صفحہ ریفریش کریں یا انٹرنیٹ چیک کریں۔</p>
         </div>
       )}
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">امتحانات اور نتائج</h1>
-          <p className="text-gray-500">طلباء کے پرچوں کے نمبر درج کریں اور رزلٹ شیٹ تیار کریں</p>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight">امتحانات اور نتائج</h1>
+          <p className="text-gray-500 font-bold text-lg">طلباء کے تعلیمی ریکارڈ اور رزلٹ کارڈز کا انتظام</p>
         </div>
-        <div className="flex bg-white p-1 rounded-xl border border-gray-100 shadow-sm self-start">
-          <button 
-            onClick={() => setActiveTab('class-entry')}
-            className={cn("px-6 py-2 rounded-lg font-bold transition-all", activeTab === 'class-entry' ? "bg-emerald-600 text-white shadow-md" : "text-gray-500")}
-          >
-            درجہ وار اندراج
-          </button>
-          <button 
-            onClick={() => setActiveTab('report-card')}
-            className={cn("px-6 py-2 rounded-lg font-bold transition-all", activeTab === 'report-card' ? "bg-emerald-600 text-white shadow-md" : "text-gray-500")}
-          >
-            رپورٹ کارڈ
-          </button>
-          <button 
-            onClick={() => setActiveTab('reports')}
-            className={cn("px-6 py-2 rounded-lg font-bold transition-all", activeTab === 'reports' ? "bg-emerald-600 text-white shadow-md" : "text-gray-500")}
-          >
-            اجتماعی رزلٹ شیٹ
-          </button>
+        <div className="flex bg-[#022c22] p-1.5 rounded-2xl border border-white/5 shadow-premium self-start">
+          {[
+            { id: 'class-entry', label: 'درجہ وار اندراج' },
+            { id: 'report-card', label: 'انفرادی رزلٹ کارڈ' },
+            { id: 'reports', label: 'اجتماعی رزلٹ شیٹ' }
+          ].map((tab) => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "px-8 py-3 rounded-xl font-bold text-base transition-all whitespace-nowrap", 
+                activeTab === tab.id 
+                  ? "bg-emerald-600 text-white shadow-lg scale-105" 
+                  : "text-emerald-100/50 hover:text-white"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {activeTab === 'class-entry' ? (
         <div className="space-y-8">
           {/* Selection Card */}
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-            <div className="space-y-2 text-right">
-              <label className="text-sm font-bold text-gray-700">سیکشن کا انتخاب</label>
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-8 items-end">
+            <div className="space-y-3 text-right">
+              <label className="text-sm font-black text-emerald-900 pr-2">سیکشن کا انتخاب</label>
               <select 
                 value={selectedSection} 
                 onChange={(e) => {
@@ -584,30 +574,30 @@ export default function Results() {
                   setSelectedClass('');
                   setClassStudents([]);
                 }}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
               >
                 <option value="">انتخاب کریں</option>
                 {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div className="space-y-2 text-right">
-              <label className="text-sm font-bold text-gray-700">درجہ کا انتخاب</label>
+            <div className="space-y-3 text-right">
+              <label className="text-sm font-black text-emerald-900 pr-2">درجہ کا انتخاب</label>
               <select 
                 value={selectedClass} 
                 onChange={(e) => setSelectedClass(e.target.value)}
                 disabled={!selectedSection}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg disabled:opacity-50"
               >
                 <option value="">انتخاب کریں</option>
                 {selectedSection && CLASS_DATA[selectedSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
               </select>
             </div>
-            <div className="space-y-2 text-right">
-              <label className="text-sm font-bold text-gray-700">امتحان</label>
+            <div className="space-y-3 text-right">
+              <label className="text-sm font-black text-emerald-900 pr-2">امتحان منتخب کریں</label>
               <select 
                 value={examType} 
                 onChange={(e) => setExamType(e.target.value as ExamType)}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
               >
                 {Object.values(ExamType).map(e => <option key={e} value={e}>{e}</option>)}
               </select>
@@ -615,9 +605,9 @@ export default function Results() {
             <button
               onClick={fetchClassStudents}
               disabled={loading || !selectedClass}
-              className="bg-emerald-600 h-[52px] rounded-xl text-white font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+              className="bg-emerald-600 h-[64px] rounded-2xl text-white font-black text-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-emerald-900/10 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-6 h-6" />}
               <span>شیٹ کھولیں</span>
             </button>
           </div>
@@ -1127,22 +1117,34 @@ export default function Results() {
                 </div>
 
                 {/* Header Section */}
-                <div className="relative mb-6">
-                  <div className="flex justify-between items-center border-b-2 border-emerald-900 pb-4 mb-4">
-                    <h2 className="text-2xl font-black text-emerald-900 leading-none">
-                      نتیجہ امتحان {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'}
-                    </h2>
-                    <h1 className="text-3xl font-black text-emerald-900 leading-none">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                <div className="relative mb-10">
+                  <div className="flex justify-between items-center bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100 shadow-sm mb-8">
+                    <div className="text-right space-y-1">
+                      <h2 className="text-2xl font-black text-emerald-900 leading-none" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
+                        نتیجہ امتحان {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'}
+                      </h2>
+                      <p className="text-xs font-bold text-gray-500">اکیڈمک سیشن 2024-25</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <h1 className="text-4xl font-black text-emerald-950 mb-2" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                      <div className="px-8 py-1.5 bg-emerald-700 text-white rounded-full text-xs font-black uppercase tracking-widest inline-block shadow-lg shadow-emerald-900/20">Collective Result Sheet</div>
+                    </div>
+
+                    <div className="text-left space-y-1">
+                      <p className="text-xs font-bold text-gray-400">تاریخ طباعت: {format(new Date(), 'dd/MM/yyyy')}</p>
+                      <p className="text-[10px] font-black text-emerald-600 uppercase">System Generated Record</p>
+                    </div>
                   </div>
                   
-                  <div className="flex gap-8 text-base font-bold text-gray-700 bg-emerald-50/50 p-2 border border-emerald-100 rounded">
-                    <div className="flex gap-2">
-                      <span className="text-emerald-900">سیکشن:</span>
-                      <span className="font-black">{reportSection}</span>
+                  <div className="flex gap-12 text-lg font-black text-emerald-900 px-6" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-400 font-bold text-sm">سیکشن:</span>
+                      <span className="bg-emerald-100/50 px-4 py-1 rounded-xl">{reportSection}</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-emerald-900">درجہ:</span>
-                      <span className="font-black">{reportClass}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-400 font-bold text-sm">درجہ:</span>
+                      <span className="bg-emerald-100/50 px-4 py-1 rounded-xl">{reportClass}</span>
                     </div>
                   </div>
                 </div>
