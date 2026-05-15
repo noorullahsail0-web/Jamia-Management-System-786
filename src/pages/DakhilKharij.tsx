@@ -170,42 +170,13 @@ export default function DakhilKharij() {
           logging: false,
           onclone: (clonedDoc) => {
             sanitizeHtml2Canvas(clonedDoc);
-
-            const colorMap: Record<string, string> = {
-              'bg-emerald-950': '#022c22',
-              'bg-emerald-900': '#064e3b',
-              'bg-emerald-800': '#065f46',
-              'bg-emerald-700': '#047857',
-              'bg-emerald-600': '#10b981',
-              'bg-emerald-50': '#ecfdf5',
-              'bg-emerald-50/20': 'rgba(236, 253, 245, 0.2)',
-              'bg-emerald-50/50': 'rgba(236, 253, 245, 0.5)',
-              'text-emerald-950': '#022c22',
-              'text-emerald-900': '#064e3b',
-              'text-emerald-700': '#047857',
-              'text-emerald-600': '#059669',
-              'border-emerald-900': '#104d38',
-              'border-emerald-800': '#065f46',
-              'border-gray-100': '#f3f4f6',
-              'border-gray-200': '#e5e7eb',
-              'print-header-active': 'display: flex'
-            };
-
+            
+            // Handle specific print-only display logic
             const elements = clonedDoc.querySelectorAll('*');
             elements.forEach((el) => {
               if (el instanceof HTMLElement) {
-                Object.entries(colorMap).forEach(([className, color]) => {
-                  if (el.classList.contains(className)) {
-                    if (className === 'print-header-active') el.style.display = 'flex';
-                    else if (className.startsWith('bg-')) el.style.backgroundColor = color;
-                    else if (className.startsWith('text-')) el.style.color = color;
-                    else if (className.startsWith('border-')) el.style.borderColor = color;
-                  }
-                });
-                
-                if (el.tagName === 'TABLE') {
-                  el.style.borderCollapse = 'collapse';
-                  el.style.width = '100%';
+                if (el.classList.contains('print-header-active')) {
+                  el.style.display = 'flex';
                 }
               }
             });
@@ -262,11 +233,13 @@ export default function DakhilKharij() {
   // Pagination for printing: 15 rows per page
   const rowsPerPage = 15;
   const paginatedStudents = [];
+  
+  // Create chunks of 15 students
   for (let i = 0; i < filteredStudents.length; i += rowsPerPage) {
     paginatedStudents.push(filteredStudents.slice(i, i + rowsPerPage));
   }
 
-  // If no students match filters but we are ready, still show an empty page
+  // If no students match filters but we are ready, still show one empty page with 15 rows
   if (paginatedStudents.length === 0 && !loading) {
     paginatedStudents.push([]);
   }
@@ -451,98 +424,98 @@ export default function DakhilKharij() {
       {/* Register Table Container - Paginated for Print - Hidden on screen */}
       <div className="print-register-pages-container" ref={printRef}>
         {paginatedStudents.map((pageStudents, pageIdx) => (
-          <div key={pageIdx} className="print-page bg-white shadow-sm border border-gray-100 overflow-hidden print:shadow-none print:border-none print:px-8 print:pt-2 print:pb-1 print:mb-0 print:break-after-page min-h-[700px] print:min-h-0 page-container-screen">
+          <div 
+            key={pageIdx} 
+            className="print-page bg-white overflow-hidden print:shadow-none print:border-none print:m-0 print:p-8 print:break-after-page page-container-print"
+            style={{ 
+              width: '297mm', 
+              height: '210mm',
+              padding: '10mm',
+              position: 'relative',
+              boxSizing: 'border-box'
+            }}
+          >
+            {/* Inner Border (Hashiya) */}
+            <div className="absolute inset-4 border-2 border-emerald-900 pointer-events-none opacity-20"></div>
+
             {/* Header for each printed page */}
-            <div className="hidden print-header-active flex flex-col items-center justify-center mb-1 pt-0">
-              <h1 className="text-xl font-bold text-gray-900 underline underline-offset-4 mb-1">رجسٹر داخل / خارج</h1>
+            <div className="hidden print-header-active flex flex-col items-center justify-center mb-4 pt-1">
+              <h1 className="text-4xl font-nastaleeq font-black text-emerald-950 mb-2 underline underline-offset-8">رجسٹر داخل خارج</h1>
               
-              <div className="w-full flex justify-between items-center px-4 py-0.5 border-y border-gray-200">
+              <div className="w-full flex justify-between items-center px-6 py-2 border-y-2 border-emerald-900 bg-emerald-50/30">
                 <div className="flex gap-6 items-center">
-                  <span className="text-sm font-bold">جامعہ تعلیم القرآن ناگمان</span>
-                  <span className="text-[10px] font-bold text-gray-600">ایڈریس: شبقدرروڈ نزدشبقدرفلورملز ناگمان ضلع پشاور</span>
-                  <span className="text-[10px] font-bold text-gray-600">الحاق نمبر: 06838</span>
+                  <span className="text-xl font-nastaleeq font-black text-emerald-900">جامعہ تعلیم القرآن ناگمان ضلع پشاور</span>
+                  <span className="text-[11px] font-bold text-gray-600">ایڈریس: شبقدرروڈ نزدشبقدرفلورملز ناگمان ضلع پشاور</span>
+                  <span className="text-[11px] font-bold text-gray-600">الحاق نمبر: 06838</span>
                 </div>
-                <div className="text-sm font-bold">
-                  سال 2026
+                <div className="text-xl font-nastaleeq font-black text-emerald-950">
+                  سال تعلیمی: 2026
                 </div>
               </div>
             </div>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-right border-collapse print:table table-fixed">
+              <table className="w-full text-right border-collapse print:table table-fixed border-2 border-emerald-900">
                 <thead>
-                  <tr className="bg-emerald-900 text-white h-12">
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[9%] text-center text-white">داخلہ نمبر</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[9%] text-center text-white">تاریخ داخلہ</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[11%] text-center text-white">نام طالب علم</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[11%] text-center text-white">ولدیت</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[9%] text-center text-white">تاریخ پیدائش</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[14%] text-center text-white">سکونت</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[8%] text-center text-white">جماعت (داخل)</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[8%] text-center text-white">جماعت (چھوڑا)</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[8%] text-center text-white">تاریخ اخراج</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[8%] text-center text-white">وجہ اخراج</th>
-                    <th className="px-1 border border-emerald-800 print:border-gray-600 text-[11.5px] font-bold w-[5%] text-center text-white">کیفیت</th>
+                  <tr className="bg-emerald-900 text-white h-12 font-nastaleeq">
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">داخلہ نمبر</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[9%] text-center text-white">تاریخ داخلہ</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[12%] text-center text-white">نام طالب علم</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[12%] text-center text-white">ولدیت</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[9%] text-center text-white">تاریخ پیدائش</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[14%] text-center text-white">سکونت</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">جماعت (داخل)</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">جماعت (چھوڑا)</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">تاریخ اخراج</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">وجہ اخراج</th>
+                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[4%] text-center text-white">کیفیت</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={11} className="px-6 py-12 text-center text-gray-500">
-                        ڈیٹا لوڈ ہو رہا ہے...
+                  {pageStudents.map((s) => (
+                    <tr key={s.id} className="h-10 even:bg-emerald-50/20 border-b border-emerald-900/10">
+                      <td className="px-1 border border-emerald-100 text-[11px] font-mono text-center truncate">{s.regNo}</td>
+                      <td className="px-1 border border-emerald-100 text-[11px] text-center">{s.admissionDate}</td>
+                      <td className="px-1 border border-emerald-100 text-[14px] font-nastaleeq font-black text-center truncate">{s.name}</td>
+                      <td className="px-1 border border-emerald-100 text-[13px] font-nastaleeq font-bold text-center truncate">{s.fatherName}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.dob}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center truncate px-2">{s.address}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.currentClass}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.leavingClass || '-'}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.leavingDate || '-'}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center truncate font-nastaleeq">{s.leavingReason || '-'}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center">
+                        <span className={cn(
+                          "font-black font-nastaleeq text-[10px]",
+                          s.status === 'active' ? "text-emerald-700" : "text-red-700"
+                        )}>
+                          {s.status === 'active' ? 'موجود' : 'خارج'}
+                        </span>
                       </td>
                     </tr>
-                  ) : pageStudents.length === 0 ? (
-                    // Fill 15 rows for empty state
-                    Array.from({ length: 15 }).map((_, i) => (
-                      <tr key={`empty-${i}`} className="h-10">
-                        {Array.from({ length: 11 }).map((_, j) => (
-                          <td key={`cell-${i}-${j}`} className="border border-gray-200 print:border-gray-600"></td>
-                        ))}
-                      </tr>
-                    ))
-                  ) : (
-                    <>
-                      {pageStudents.map((s) => (
-                        <tr key={s.id} className="hover:bg-gray-50 transition-colors h-11 even:bg-gray-50/50">
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] font-mono text-center truncate">{s.regNo}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center">{s.admissionDate}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[11px] font-bold text-center truncate">{s.name}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[11px] text-center truncate">{s.fatherName}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center">{s.dob}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center truncate">{s.address}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center">{s.currentClass}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center">{s.leavingClass || '-'}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center">{s.leavingDate || '-'}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center truncate">{s.leavingReason || '-'}</td>
-                          <td className="px-1 border border-gray-100 print:border-gray-600 text-[10px] text-center">
-                            <span className={cn(
-                              "font-bold",
-                              s.status === 'active' ? "text-emerald-700" : "text-red-700"
-                            )}>
-                              {s.status === 'active' ? 'موجود' : 'خارج'}
-                            </span>
-                          </td>
-                        </tr>
+                  ))}
+                  {/* Always fill up to 15 rows */}
+                  {Array.from({ length: rowsPerPage - pageStudents.length }).map((_, i) => (
+                    <tr key={`extra-${i}`} className="h-10 border-b border-emerald-900/10">
+                      {Array.from({ length: 11 }).map((_, j) => (
+                        <td key={`ecell-${i}-${j}`} className="border border-emerald-100"></td>
                       ))}
-                      {/* Fill the rest of 15 rows with empty rows for consistent layout */}
-                      {pageStudents.length < rowsPerPage && Array.from({ length: rowsPerPage - pageStudents.length }).map((_, i) => (
-                        <tr key={`extra-${i}`} className="h-11">
-                          {Array.from({ length: 11 }).map((_, j) => (
-                            <td key={`ecell-${i}-${j}`} className="border border-gray-100 print:border-gray-600"></td>
-                          ))}
-                        </tr>
-                      ))}
-                    </>
-                  )}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
               
               {/* Signatures for print */}
-              <div className="hidden print:flex justify-between mt-2 px-8 pb-2">
-                <p className="text-[10px] font-bold">دستخط مہتمم / ناظم تعلیمات: .................................</p>
-                <p className="text-[10px] font-bold">مہر مدرسہ: .................................</p>
-                <p className="text-[10px] font-bold">تاریخ: {format(new Date(), 'dd-MM-yyyy')}</p>
+              <div className="hidden print:flex justify-between mt-6 px-8">
+                <div className="text-center font-nastaleeq">
+                  <p className="text-xs font-black text-emerald-900 border-b border-emerald-900 px-4">دستخط مہتمم / ناظم تعلیمات</p>
+                </div>
+                <div className="text-center font-nastaleeq">
+                  <p className="text-xs font-black text-emerald-900 border-b border-emerald-900 px-4">مہر مدرسہ</p>
+                </div>
+                <div className="text-center font-nastaleeq">
+                  <p className="text-xs font-black text-emerald-900 border-b border-emerald-900 px-4">تاریخ: {format(new Date(), 'dd-MM-yyyy')}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -561,30 +534,25 @@ export default function DakhilKharij() {
             left: -9999px;
             top: 0;
             width: 297mm;
-            min-height: 210mm;
+            height: 210mm;
+            padding: 10mm;
             color: #000000 !important;
             background: #ffffff !important;
+            box-sizing: border-box;
           }
           /* Comprehensive fix for html2canvas oklch error by stripping Tailwind 4 variables */
           .print-page, .print-page * {
-            border-color: #000000 !important;
+            border-color: #064e3b !important;
             color: #000000 !important;
             background-color: transparent !important;
             --tw-ring-color: transparent !important;
-            --tw-ring-offset-shadow: 0 0 #0000 !important;
-            --tw-ring-shadow: 0 0 #0000 !important;
             --tw-shadow: 0 0 #0000 !important;
-            --tw-shadow-colored: 0 0 #0000 !important;
-            --tw-outline-style: none !important;
             box-shadow: none !important;
           }
           .print-page thead tr,
           .print-page th {
-            background-color: #104d38 !important;
+            background-color: #064e3b !important;
             color: #ffffff !important;
-          }
-          .print-page .bg-white {
-            background-color: #ffffff !important;
           }
           .print-header-active {
             display: flex !important;
@@ -593,23 +561,23 @@ export default function DakhilKharij() {
         @media print {
           @page { 
             size: A4 landscape; 
-            margin: 0.5cm; 
+            margin: 5mm; 
           }
           body { background: white !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
           .no-print { display: none !important; }
           .print-page { 
-            position: static !important;
             display: block !important; 
-            width: 100% !important;
-            margin: 0 0 1cm 0 !important;
-            padding: 0 !important;
+            width: 287mm !important;
+            height: 200mm !important;
+            margin: 0 auto !important;
+            padding: 5mm !important;
             page-break-after: always !important;
+            border: 2px solid #064e3b !important;
+            position: relative !important;
           }
-          .page-container-screen { border: none !important; }
-          table { width: 100% !important; border-collapse: collapse !important; border: 1.5px solid #000 !important; table-layout: fixed !important; }
-          th, td { border: 1px solid #000 !important; padding: 1px 2px !important; line-height: 1 !important; height: 35px !important; }
-          thead th { background-color: #104d38 !important; color: white !important; -webkit-print-color-adjust: exact; }
-          h1, p, img { text-align: center; }
+          table { width: 100% !important; border-collapse: collapse !important; border: 2px solid #064e3b !important; table-layout: fixed !important; }
+          th, td { border: 1px solid #064e3b !important; padding: 2px 4px !important; line-height: 1.2 !important; height: 38px !important; }
+          thead th { background-color: #064e3b !important; color: white !important; font-weight: 900 !important; }
           .print-header-active { display: flex !important; }
         }
       `}} />

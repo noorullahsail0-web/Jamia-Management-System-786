@@ -380,45 +380,6 @@ export default function Results() {
         logging: false,
         onclone: (clonedDoc) => {
           sanitizeHtml2Canvas(clonedDoc);
-
-          const colorMap: Record<string, string> = {
-            'bg-emerald-950': '#022c22',
-            'bg-emerald-900': '#064e3b',
-            'bg-emerald-800': '#065f46',
-            'bg-emerald-700': '#047857',
-            'bg-emerald-600': '#10b981',
-            'bg-emerald-50': '#ecfdf5',
-            'bg-emerald-50/20': 'rgba(236, 253, 245, 0.2)',
-            'bg-emerald-50/50': 'rgba(236, 253, 245, 0.5)',
-            'bg-emerald-100/50': 'rgba(209, 250, 229, 0.5)',
-            'text-emerald-950': '#022c22',
-            'text-emerald-900': '#064e3b',
-            'text-emerald-700': '#047857',
-            'text-emerald-600': '#059669',
-            'border-emerald-900': '#104d38',
-            'border-emerald-800': '#065f46',
-            'border-emerald-100': '#d1fae5',
-            'border-gray-100': '#f3f4f6',
-            'border-gray-200': '#e5e7eb'
-          };
-
-          const elements = clonedDoc.querySelectorAll('*');
-          elements.forEach((el) => {
-            if (el instanceof HTMLElement) {
-              Object.entries(colorMap).forEach(([className, color]) => {
-                if (el.classList.contains(className)) {
-                  if (className.startsWith('bg-')) el.style.backgroundColor = color;
-                  if (className.startsWith('text-')) el.style.color = color;
-                  if (className.startsWith('border-')) el.style.borderColor = color;
-                }
-              });
-
-              // Force basic layout fixes for html2canvas
-              if (el.tagName === 'TABLE') {
-                el.style.borderCollapse = 'collapse';
-              }
-            }
-          });
         }
       });
       const imgData = canvas.toDataURL('image/png', 1.0);
@@ -446,35 +407,6 @@ export default function Results() {
         logging: false,
         onclone: (clonedDoc) => {
           sanitizeHtml2Canvas(clonedDoc);
-
-          const colorMap: Record<string, string> = {
-            'bg-emerald-950': '#022c22',
-            'bg-emerald-900': '#064e3b',
-            'bg-emerald-700': '#047857',
-            'bg-emerald-600': '#10b981',
-            'bg-emerald-50': '#ecfdf5',
-            'bg-emerald-50/10': 'rgba(236, 253, 245, 0.1)',
-            'bg-emerald-50/50': 'rgba(236, 253, 245, 0.5)',
-            'text-emerald-950': '#022c22',
-            'text-emerald-900': '#064e3b',
-            'text-emerald-700': '#047857',
-            'border-emerald-900': '#022c22',
-            'border-emerald-100': '#d1fae5',
-            'border-emerald-200': '#a7f3d0'
-          };
-
-          const elements = clonedDoc.querySelectorAll('*');
-          elements.forEach((el) => {
-            if (el instanceof HTMLElement) {
-              Object.entries(colorMap).forEach(([className, color]) => {
-                if (el.classList.contains(className)) {
-                  if (className.startsWith('bg-')) el.style.backgroundColor = color;
-                  if (className.startsWith('text-')) el.style.color = color;
-                  if (className.startsWith('border-')) el.style.borderColor = color;
-                }
-              });
-            }
-          });
         }
       });
       const imgData = canvas.toDataURL('image/png', 1.0);
@@ -1102,7 +1034,7 @@ export default function Results() {
                   </button>
                   <button 
                     onClick={printCollective}
-                    className="bg-gray-800 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all"
+                    className="bg-gray-800 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all font-urdu"
                   >
                     <FileText className="w-5 h-5" />
                     اجتماعی پرنٹ
@@ -1118,33 +1050,33 @@ export default function Results() {
 
                 {/* Header Section */}
                 <div className="relative mb-10">
-                  <div className="flex justify-between items-center bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100 shadow-sm mb-8">
-                    <div className="text-right space-y-1">
-                      <h2 className="text-2xl font-black text-emerald-900 leading-none" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
+                  <div className="flex justify-between items-center bg-emerald-50/50 p-8 rounded-[2.5rem] border-2 border-emerald-900 shadow-sm mb-10">
+                    <div className="text-right space-y-2">
+                      <h2 className="text-3xl font-nastaleeq font-black text-emerald-900 leading-none">
                         نتیجہ امتحان {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'}
                       </h2>
-                      <p className="text-xs font-bold text-gray-500">اکیڈمک سیشن 2024-25</p>
+                      <p className="text-sm font-bold text-gray-600">اکیڈمک سیشن 2024-25</p>
                     </div>
                     
-                    <div className="text-center">
-                      <h1 className="text-4xl font-black text-emerald-950 mb-2" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
-                      <div className="px-8 py-1.5 bg-emerald-700 text-white rounded-full text-xs font-black uppercase tracking-widest inline-block shadow-lg shadow-emerald-900/20">Collective Result Sheet</div>
+                    <div className="text-center space-y-4">
+                      <h1 className="text-5xl font-nastaleeq font-black text-emerald-950 mb-3">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                      <div className="px-10 py-2 bg-emerald-800 text-white rounded-full text-sm font-black uppercase tracking-[0.2em] inline-block shadow-lg shadow-emerald-900/40">COLLECTIVE RESULT SHEET</div>
                     </div>
 
-                    <div className="text-left space-y-1">
-                      <p className="text-xs font-bold text-gray-400">تاریخ طباعت: {format(new Date(), 'dd/MM/yyyy')}</p>
-                      <p className="text-[10px] font-black text-emerald-600 uppercase">System Generated Record</p>
+                    <div className="text-left space-y-2">
+                      <p className="text-sm font-bold text-gray-500">تاریخ طباعت: {format(new Date(), 'dd/MM/yyyy')}</p>
+                      <p className="text-xs font-black text-emerald-700 uppercase">OFFICIAL ACADEMIC RECORD</p>
                     </div>
                   </div>
                   
-                  <div className="flex gap-12 text-lg font-black text-emerald-900 px-6" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-400 font-bold text-sm">سیکشن:</span>
-                      <span className="bg-emerald-100/50 px-4 py-1 rounded-xl">{reportSection}</span>
+                  <div className="flex gap-16 text-2xl font-nastaleeq font-black text-emerald-900 px-8 mb-6">
+                    <div className="flex items-center gap-4">
+                      <span className="text-gray-500 font-bold text-base">سیکشن:</span>
+                      <span className="bg-emerald-100/70 px-6 py-2 rounded-2xl border border-emerald-200">{reportSection}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-400 font-bold text-sm">درجہ:</span>
-                      <span className="bg-emerald-100/50 px-4 py-1 rounded-xl">{reportClass}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-gray-500 font-bold text-base">درجہ:</span>
+                      <span className="bg-emerald-100/70 px-6 py-2 rounded-2xl border border-emerald-200">{reportClass}</span>
                     </div>
                   </div>
                 </div>
@@ -1152,19 +1084,19 @@ export default function Results() {
                 <div className="relative overflow-x-auto">
                   <table className="w-full text-right border-collapse text-sm border-2 border-emerald-900">
                   <thead>
-                    <tr className="bg-emerald-900 text-white font-urdu">
-                      <th className="border-r border-emerald-800 p-3 w-40 text-center font-black">رجسٹریشن نمبر</th>
-                      <th className="border-r border-emerald-800 p-3 w-40 text-right font-black">طالب علم کا نام</th>
-                      <th className="border-r border-emerald-800 p-3 w-48 font-black">ولدیت</th>
+                    <tr className="bg-emerald-900 text-white font-nastaleeq">
+                      <th className="border-r border-emerald-800 p-4 w-40 text-center font-black text-base">رجسٹریشن نمبر</th>
+                      <th className="border-r border-emerald-800 p-4 w-44 text-right font-black text-base">نام طالب علم</th>
+                      <th className="border-r border-emerald-800 p-4 w-48 font-black text-base">ولدیت</th>
                       {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                        <th key={s} className="border-r border-emerald-800 p-3 text-xs w-20 text-center font-black">{s}</th>
+                        <th key={s} className="border-r border-emerald-800 p-2 text-sm w-24 text-center font-black">{s}</th>
                       ))}
                       {reportSection === Section.BANIN_HIFZ && ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map(s => (
-                        <th key={s} className="border-r border-emerald-800 p-3 text-center font-black">{s}</th>
+                        <th key={s} className="border-r border-emerald-800 p-4 text-center font-black text-sm">{s}</th>
                       ))}
-                      <th className="border-r border-emerald-800 p-3 w-20 text-center font-black">مجموعہ</th>
-                      <th className="border-r border-emerald-800 p-3 w-20 text-center font-black">پوزیشن</th>
-                      <th className="border p-3 w-24 text-center font-black">کیفیت</th>
+                      <th className="border-r border-emerald-800 p-4 w-24 text-center font-black text-base">مجموعہ</th>
+                      <th className="border-r border-emerald-800 p-4 w-20 text-center font-black text-base">پوزیشن</th>
+                      <th className="border p-4 w-28 text-center font-black text-base">کیفیت</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1185,25 +1117,25 @@ export default function Results() {
 
                       return (
                           <tr key={i} className="hover:bg-gray-50 border-b border-emerald-900/10">
-                            <td className="border-r border-emerald-900/20 p-3 font-mono whitespace-nowrap text-center text-xs">{res.regNo}</td>
-                            <td className="border-r border-emerald-900/20 p-3 font-bold text-right text-xs">{res.studentName}</td>
-                            <td className="border-r border-emerald-900/20 p-3 text-gray-600 font-urdu text-[10px] leading-tight">{res.fatherName}</td>
+                            <td className="border-r border-emerald-900/20 p-4 font-mono whitespace-nowrap text-center text-sm">{res.regNo}</td>
+                            <td className="border-r border-emerald-900/20 p-4 font-nastaleeq font-black text-right text-lg">{res.studentName}</td>
+                            <td className="border-r border-emerald-900/20 p-4 text-emerald-950 font-nastaleeq text-base font-bold leading-tight">{res.fatherName}</td>
                             {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                              <td key={s} className="border-r border-emerald-900/20 p-3 text-center font-bold text-xs">{res.subjects?.[s] || '-'}</td>
+                              <td key={s} className="border-r border-emerald-900/20 p-4 text-center font-black text-sm">{res.subjects?.[s] || '-'}</td>
                             ))}
                             {reportSection === Section.BANIN_HIFZ && (
                               <>
-                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.q1}</td>
-                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.q2}</td>
-                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.q3}</td>
-                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.lahja}</td>
-                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.safai}</td>
-                                <td className="border-r border-emerald-900/20 p-3 text-center text-xs">{res.hifzBreakdown?.adiya}</td>
+                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.q1}</td>
+                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.q2}</td>
+                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.q3}</td>
+                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.lahja}</td>
+                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.safai}</td>
+                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.adiya}</td>
                               </>
                             )}
-                            <td className="border-r border-emerald-900/20 p-3 text-center font-black text-emerald-700 bg-emerald-50/20 text-sm">{res.totalMarks}</td>
-                            <td className="border-r border-emerald-900/20 p-3 text-center font-bold text-sm">{rank}</td>
-                            <td className="border p-3 text-center font-bold text-xs font-urdu">
+                            <td className="border-r border-emerald-900/20 p-4 text-center font-black text-emerald-800 bg-emerald-50/20 text-base">{res.totalMarks}</td>
+                            <td className="border-r border-emerald-900/20 p-4 text-center font-black text-base">{rank}</td>
+                            <td className="border p-4 text-center font-black text-sm font-nastaleeq">
                               {res.grade}
                             </td>
                         </tr>

@@ -25,10 +25,9 @@ import Dashboard from './pages/Dashboard';
 import Admission from './pages/Admission';
 import Attendance from './pages/Attendance';
 import Results from './pages/Results';
-import IDGenerator from './pages/IDGenerator';
 import DakhilKharij from './pages/DakhilKharij';
 
-type Tab = 'dashboard' | 'admission' | 'attendance' | 'results' | 'id-cards' | 'register';
+type Tab = 'dashboard' | 'admission' | 'attendance' | 'results' | 'register';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -120,7 +119,6 @@ export default function App() {
     { id: 'admission', label: 'نیا داخلہ / طلباء', icon: Users },
     { id: 'attendance', label: 'حاضری سسٹم', icon: ClipboardCheck },
     { id: 'results', label: 'نتائج سسٹم', icon: GraduationCap },
-    { id: 'id-cards', label: 'آئی ڈی کارڈز', icon: CreditCard },
     { id: 'register', label: 'داخل خارج رجسٹر', icon: BookCopy },
   ];
 
@@ -274,7 +272,6 @@ export default function App() {
               {activeTab === 'admission' && <Admission />}
               {activeTab === 'attendance' && <Attendance />}
               {activeTab === 'results' && <Results />}
-              {activeTab === 'id-cards' && <IDGenerator />}
               {activeTab === 'register' && <DakhilKharij />}
             </motion.div>
           </AnimatePresence>

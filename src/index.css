@@ -69,6 +69,39 @@
     box-shadow: none !important;
     text-shadow: none !important;
   }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-only-cards {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 15px !important;
+    padding: 10px !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .print-only-cards > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 5px !important;
+    box-shadow: none !important;
+  }
+
+  .print-hidden, .no-print, nav, button, .flex-wrap.gap-3.print\:hidden {
+    display: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
 }
 
 @media (min-width: 768px) {
@@ -83,13 +116,18 @@
     font-family: var(--sans-font);
     @apply text-gray-900 bg-gray-50;
     font-feature-settings: "kern" 1, "liga" 1;
-    line-height: 1.8;
+    line-height: 2;
   }
 }
 
 .font-urdu {
   font-family: var(--urdu-font);
-  line-height: 2.2;
+  line-height: 2.4;
+}
+
+.font-nastaleeq {
+  font-family: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
+  line-height: 2.6;
 }
 
 .shadow-premium {

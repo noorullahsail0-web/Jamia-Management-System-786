@@ -71,39 +71,6 @@ export default function Attendance() {
         logging: false,
         onclone: (clonedDoc) => {
           sanitizeHtml2Canvas(clonedDoc);
-
-          const colorMap: Record<string, string> = {
-            'bg-emerald-950': '#022c22',
-            'bg-emerald-900': '#064e3b',
-            'bg-emerald-800': '#065f46',
-            'bg-emerald-700': '#047857',
-            'bg-emerald-600': '#10b981',
-            'bg-emerald-50': '#ecfdf5',
-            'text-emerald-950': '#022c22',
-            'text-emerald-900': '#064e3b',
-            'text-emerald-800': '#065f46',
-            'text-emerald-700': '#047857',
-            'border-emerald-900': '#064e3b',
-            'border-gray-100': '#f3f4f6',
-            'border-gray-200': '#e5e7eb'
-          };
-
-          const elements = clonedDoc.querySelectorAll('*');
-          elements.forEach((el) => {
-            if (el instanceof HTMLElement) {
-              Object.entries(colorMap).forEach(([className, color]) => {
-                if (el.classList.contains(className)) {
-                  if (className.startsWith('bg-')) el.style.backgroundColor = color;
-                  if (className.startsWith('text-')) el.style.color = color;
-                  if (className.startsWith('border-')) el.style.borderColor = color;
-                }
-              });
-
-              if (el.tagName === 'TABLE') {
-                el.style.borderCollapse = 'collapse';
-              }
-            }
-          });
         }
       });
       const imgData = canvas.toDataURL('image/png');
@@ -360,12 +327,12 @@ export default function Attendance() {
               >
                 <div className="w-full mb-6 border-b-2 border-emerald-900 pb-4">
                   <div className="flex justify-between items-center bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                    <div className="text-xl font-black text-emerald-900" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
+                    <div className="text-xl font-nastaleeq font-black text-emerald-900 leading-tight">
                       جامعہ تعلیم القرآن ناگمان ضلع پشاور
                     </div>
                     <div className="text-center">
-                      <h1 className="text-4xl font-black text-black mb-1" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>حاضری رجسٹر</h1>
-                      <div className="px-6 py-1 bg-emerald-600 text-white rounded-full text-sm font-bold shadow-sm inline-block uppercase">Attendance Register</div>
+                      <h1 className="text-4xl font-nastaleeq font-black text-black mb-1">حاضری رجسٹر</h1>
+                      <div className="px-8 py-1.5 bg-emerald-600 text-white rounded-full text-sm font-bold shadow-sm inline-block uppercase tracking-wider">Attendance Register</div>
                     </div>
                     <div className="text-left space-y-1">
                       <div className="text-xs font-bold text-gray-400">تاریخ طباعت: {format(new Date(), 'dd/MM/yyyy')}</div>
@@ -373,24 +340,24 @@ export default function Attendance() {
                     </div>
                   </div>
                   
-                  <div className="flex justify-between items-center mt-4 px-4 text-base font-bold text-gray-700" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
-                    <div className="flex gap-10">
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-900 bg-emerald-100 px-3 py-1 rounded-lg">سیکشن:</span>
-                        <span className="font-black text-lg">{section}</span>
+                  <div className="flex justify-between items-center mt-6 px-4 text-2xl font-nastaleeq font-black text-emerald-900 border-t border-emerald-100 pt-4">
+                    <div className="flex gap-12">
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400 font-bold text-sm">سیکشن:</span>
+                        <span className="bg-emerald-50 px-4 py-1 rounded-xl border border-emerald-100">{section}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-900 bg-emerald-100 px-3 py-1 rounded-lg">درجہ:</span>
-                        <span className="font-black text-lg">{currentClass}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400 font-bold text-sm">درجہ:</span>
+                        <span className="bg-emerald-50 px-4 py-1 rounded-xl border border-emerald-100">{currentClass}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-900 bg-emerald-100 px-3 py-1 rounded-lg">ماہ:</span>
-                        <span className="font-black text-lg">{URDU_MONTHS[selectedMonth]} {selectedYear}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400 font-bold text-sm">ماہ:</span>
+                        <span className="bg-emerald-50 px-4 py-1 rounded-xl border border-emerald-100">{URDU_MONTHS[selectedMonth]} {selectedYear}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-400">کوڈ:</span>
-                      <span className="font-sans font-black text-emerald-900">DN{selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}</span>
+                      <span className="text-gray-400 font-bold text-sm">کوڈ:</span>
+                      <span className="font-sans font-black text-emerald-900 text-base">DN{selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}</span>
                     </div>
                   </div>
                 </div>
@@ -398,9 +365,9 @@ export default function Attendance() {
                 <div className="w-full">
                   <table className="w-full border-collapse" style={{ border: '1.5px solid #064e3b' }}>
                     <thead>
-                      <tr className="bg-emerald-950 text-white h-12" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
-                        <th className="border border-emerald-900 p-1 w-10 text-center text-sm font-black">ن-ش</th>
-                        <th className="border border-emerald-900 p-1 w-52 text-right pr-3 text-sm font-black">نام طالب علم</th>
+                      <tr className="bg-emerald-900 text-white h-14 font-nastaleeq">
+                        <th className="border border-emerald-900 p-2 w-12 text-center text-base font-black">ن-ش</th>
+                        <th className="border border-emerald-900 p-2 w-64 text-right pr-4 text-base font-black">نام طالب علم</th>
                         {eachDayOfInterval({ start: startOfMonth(new Date(selectedYear, selectedMonth)), end: endOfMonth(new Date(selectedYear, selectedMonth)) }).map(d => (
                           <th key={d.toString()} className="border border-emerald-900 p-0 text-[10px] w-7 text-center font-bold font-sans">{format(d, 'd')}</th>
                         ))}
@@ -414,7 +381,7 @@ export default function Attendance() {
                          return (
                            <tr key={index} className="h-9 transition-colors even:bg-gray-50/50">
                              <td className="border border-emerald-900 text-center text-xs font-bold">{index + 1}</td>
-                             <td className="border border-emerald-900 pr-3 text-[18px] font-bold text-gray-900 truncate" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>{student.name}</td>
+                             <td className="border border-emerald-900 pr-4 text-xl font-nastaleeq font-black text-gray-950 truncate">{student.name}</td>
                              {days.map(day => {
                                const record = monthlyData.find(r => r.studentId === student.id && r.date === format(day, 'yyyy-MM-dd'));
                                if (record?.status === 'present') presentCount++;
@@ -433,10 +400,10 @@ export default function Attendance() {
                     </tbody>
                   </table>
                   
-                  <div className="mt-8 flex justify-between px-8 text-xl font-bold text-emerald-900 border-t border-gray-100 pt-6" style={{ fontFamily: 'Jameel Noori Nastaleeq, system-ui' }}>
-                    <p>دستخط استاد جی: .................................</p>
-                    <p>دستخط ناظم: .................................</p>
-                    <p>مہر جامعہ: .................................</p>
+                  <div className="mt-12 flex justify-between px-10 text-2xl font-nastaleeq font-black text-emerald-900 border-t-2 border-emerald-900 pt-6">
+                    <p>دستخط استاد جی</p>
+                    <p>دستخط ناظم</p>
+                    <p>مہر جامعہ</p>
                   </div>
                 </div>
               </div>
