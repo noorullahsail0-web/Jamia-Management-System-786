@@ -12,7 +12,6 @@ console.log("Firestore Database ID:", firebaseConfig.firestoreDatabaseId || '(de
 // Initialize Firestore with settings for better reliability in restricted environments
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-  // Using a more stable configuration for restricted networks
 }, firebaseConfig.firestoreDatabaseId || '(default)');
 
 export const auth = getAuth(app);

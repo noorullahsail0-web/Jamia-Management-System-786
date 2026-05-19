@@ -101,8 +101,8 @@ export default function App() {
           <div className="mb-6">
             <img src={logo} alt="Logo" className="w-40 h-40 mx-auto object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 font-urdu">جامعہ مینجمنٹ سسٹم</h1>
-          <p className="text-gray-600 mb-8">براہ کرم سسٹم تک رسائی کے لیے لاگ ان کریں</p>
+          <h1 className="text-3xl font-black text-emerald-950 mb-2 font-nastaleeq">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+          <p className="text-sm font-bold text-emerald-600 mb-8 uppercase tracking-widest">Digital Management System</p>
           <button
             onClick={login}
             className="w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-emerald-200"
@@ -150,7 +150,7 @@ export default function App() {
               <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
             </div>
             <div className={cn("transition-all duration-300 origin-right overflow-hidden", !isSidebarOpen && "lg:w-0 lg:opacity-0")}>
-              <h2 className="text-xl font-black whitespace-nowrap leading-none mb-1 text-emerald-50">جامعہ تعلیم القرآن</h2>
+              <h2 className="text-xl font-black whitespace-nowrap leading-none mb-1 text-emerald-50">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h2>
               <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider leading-none">Management System</p>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function App() {
         <header className="lg:hidden bg-white border-b px-4 py-4 sticky top-0 z-40 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
             <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-            <h1 className="text-lg font-bold">جامعہ تعلیم القرآن</h1>
+            <h1 className="text-lg font-bold">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
           </div>
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}

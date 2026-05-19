@@ -37,8 +37,6 @@ export default function Results() {
   const [classStudents, setClassStudents] = useState<Student[]>([]);
   const [classResults, setClassResults] = useState<Record<string, any>>({}); // studentId -> { subjects: {}, hifz: {} }
 
-  const [printingCollective, setPrintingCollective] = useState(false);
-  const [printingIndividual, setPrintingIndividual] = useState<any>(null);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
   const collectiveRef = useRef<HTMLDivElement>(null);
   const individualRef = useRef<HTMLDivElement>(null);
@@ -293,10 +291,6 @@ export default function Results() {
     }
   };
 
-  const printCollective = () => {
-    window.print();
-  };
-
   const fetchFullStudentResults = async (studentId: string) => {
     setLoading(true);
     try {
@@ -317,15 +311,6 @@ export default function Results() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const printIndividual = async (res: any) => {
-    const fullResults = await fetchFullStudentResults(res.studentId);
-    setPrintingIndividual({ ...res, allExams: fullResults });
-    setTimeout(() => {
-      window.print();
-      setPrintingIndividual(null);
-    }, 500);
   };
 
   const downloadCollectiveExcel = () => {
@@ -374,19 +359,21 @@ export default function Results() {
     try {
       await document.fonts.ready;
       const canvas = await html2canvas(collectiveRef.current, {
-        scale: 2,
+        scale: 4, // Higher scale for better resolution
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        imageTimeout: 0,
         onclone: (clonedDoc) => {
           sanitizeHtml2Canvas(clonedDoc);
         }
       });
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF('l', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      const margin = 5;
+      pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
       pdf.save(`Collective_Result_${reportClass}_${examType}_${new Date().getTime()}.pdf`);
     } catch (e) {
       console.error(e);
@@ -401,20 +388,21 @@ export default function Results() {
     setDownloadingPDF(true);
     try {
       const canvas = await html2canvas(individualRef.current, {
-        scale: 2,
+        scale: 4, // Higher scale for better resolution
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        imageTimeout: 0,
         onclone: (clonedDoc) => {
           sanitizeHtml2Canvas(clonedDoc);
         }
       });
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF('p', 'mm', [155, 215]); // 15.5cm x 21.5cm
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       const margin = 5;
-      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
+      pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
       pdf.save(`Report_Card_${student?.name}_${examType}_${new Date().getTime()}.pdf`);
     } catch (e) {
       console.error(e);
@@ -647,7 +635,7 @@ export default function Results() {
                             ))
                           )}
 
-                          <td className="p-4 border text-center font-black text-emerald-700 bg-emerald-50/30">{total}</td>
+                          <td className="p-4 border text-center font-black text-emerald-700">{total}</td>
                           <td className="p-4 border text-center font-bold">{positionsMap[s.id]}</td>
                           <td className="p-4 border text-center font-bold">
                             <span className={cn(
@@ -794,168 +782,155 @@ export default function Results() {
                   >
                     فہرست پر واپس جائیں
                   </button>
-                  <button
-                    onClick={() => {
-                    setPrintingIndividual({ 
-                      studentName: student.name,
-                      fatherName: student.fatherName,
-                      regNo: student.regNo,
-                      class: student.currentClass,
-                      year: new Date().getFullYear().toString(),
-                      allExams: studentAllResults,
-                      grade: calculateGrade((((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 300) * 100),
-                      percentage: ((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 3
-                    });
-                    setTimeout(() => {
-                      window.print();
-                      setPrintingIndividual(null);
-                    }, 500);
-                  }}
-                  className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-100 font-urdu"
-                >
-                  <FileText className="w-5 h-5" />
-                  رپورٹ کارڈ پرنٹ کریں
-                </button>
-              </div>
-            </div>
-
-            {/* Report Card content wrapper for PDF generation */}
-            <div 
-              ref={individualRef} 
-              className="bg-white mx-auto relative overflow-hidden flex flex-col p-8 border-4 border-emerald-900" 
-              style={{ width: '15.5cm', height: '21.5cm' }}
-            >
-              {/* Watermark Logo */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none">
-                <img src={logo} alt="Watermark" className="w-[80%] object-contain" />
+                </div>
               </div>
 
-              {/* Header */}
-              <div className="relative text-center border-b-2 border-emerald-900 pb-3 mb-4">
-                <div className="flex flex-col items-center gap-4">
-                  <h1 className="text-3xl font-black text-emerald-900 leading-tight">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
-                  <div className="mt-4 flex justify-center">
-                    <p className="text-xl font-bold bg-emerald-900 text-white px-10 pt-3 pb-8 rounded-full shadow-md inline-flex items-center justify-center leading-none">سالانہ تعلیمی رپورٹ</p>
+              {/* Report Card content wrapper for PDF generation */}
+              <div 
+                ref={individualRef} 
+                className="bg-white mx-auto relative overflow-hidden flex flex-col px-8 py-4 border-2 border-emerald-900 font-urdu" 
+                style={{ width: '15.5cm', height: '21.5cm' }}
+                id="report-card-print"
+              >
+                {/* Watermark Logo */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
+                  <img src={logo} alt="Watermark" className="w-[80%] object-contain" />
+                </div>
+
+                {/* Header */}
+                <div className="relative text-center mb-1 pt-1">
+                  <div className="flex flex-col items-center gap-1">
+                    <h1 className="text-3xl font-black text-emerald-950">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                    <p className="text-xl font-bold font-nastaleeq text-black leading-tight">سالانہ تعلیمی رپورٹ</p>
+                  </div>
+                </div>
+
+                {/* Student Info Grid */}
+                <div className="relative grid grid-cols-2 gap-x-12 gap-y-2 mb-2">
+                  <div className="flex gap-2 items-end">
+                    <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">طالب علم:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
+                      <span className="font-black text-2xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.name}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">ولدیت:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
+                      <span className="font-black text-2xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.fatherName}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">درجہ:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
+                      <span className="font-black text-xl text-emerald-900 leading-none inline-block whitespace-nowrap">{student.currentClass} ({student.section})</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <span className="text-emerald-900 whitespace-nowrap font-black text-base font-mono mb-1">Roll No:</span>
+                    <div className="flex-1 text-center border-b-2 border-emerald-900/30 pb-0.5">
+                      <span className="font-mono font-black text-xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.regNo}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Table */}
+                <div className="relative flex-1">
+                  <table className="w-full border-collapse border-2 border-emerald-900 text-center table-fixed">
+                    <thead>
+                      <tr className="bg-emerald-900 text-white h-12">
+                        <th className="border border-white/10 font-black text-xl w-[35%] text-center align-top pt-2">مضامین</th>
+                        <th className="border border-white/10 font-black text-base text-center align-top pt-3">سہ ماہی</th>
+                        <th className="border border-white/10 font-black text-base text-center align-top pt-3">شش ماہی</th>
+                        <th className="border border-white/10 font-black text-base text-center align-top pt-3">سالانہ</th>
+                        <th className="border border-white/10 font-black text-xl text-center align-top pt-2">مجموعہ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {student.section !== Section.BANIN_HIFZ ? (
+                        CLASS_DATA[student.section as Section]?.find(c => c.name === student.currentClass)?.subjects.map((sub, idx) => {
+                          const q = studentAllResults[ExamType.QUARTERLY]?.subjects?.[sub] ?? '-';
+                          const h = studentAllResults[ExamType.HALF_YEARLY]?.subjects?.[sub] ?? '-';
+                          const a = studentAllResults[ExamType.ANNUAL]?.subjects?.[sub] ?? '-';
+                          const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
+                          return (
+                            <tr key={idx} className="h-11 hover:bg-emerald-50/10">
+                              <td className="border border-emerald-900/20 font-bold text-emerald-950 text-center align-top pt-1 whitespace-nowrap text-lg">{sub}</td>
+                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{q}</td>
+                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{h}</td>
+                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{a}</td>
+                              <td className="border border-emerald-900/20 font-black text-black text-xl text-center align-top pt-1">{total || '-'}</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map((sub, idx) => {
+                          const keys = ['q1', 'q2', 'q3', 'lahja', 'safai', 'adiya'];
+                          const key = keys[idx];
+                          const q = studentAllResults[ExamType.QUARTERLY]?.hifzBreakdown?.[key] ?? '-';
+                          const h = studentAllResults[ExamType.HALF_YEARLY]?.hifzBreakdown?.[key] ?? '-';
+                          const a = studentAllResults[ExamType.ANNUAL]?.hifzBreakdown?.[key] ?? '-';
+                          const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
+                          return (
+                            <tr key={idx} className="h-11 hover:bg-emerald-50/10">
+                              <td className="border border-emerald-900/20 font-bold text-emerald-950 text-center align-top pt-1 whitespace-nowrap text-lg">{sub}</td>
+                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{q}</td>
+                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{h}</td>
+                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{a}</td>
+                              <td className="border border-emerald-900/20 font-black text-black text-xl text-center align-top pt-1">{total || '-'}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                      {/* Total Marks Row */}
+                      <tr className="bg-emerald-50 text-emerald-950 h-14 border-t-2 border-emerald-900">
+                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">کل حاصل کردہ نمبرات</td>
+                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
+                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
+                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.ANNUAL]?.totalMarks || '0'}</td>
+                        <td className="border border-emerald-900/30 text-emerald-950 font-black text-2xl text-center align-top pt-1.5 italic bg-emerald-100/30">
+                          {(Number(studentAllResults[ExamType.QUARTERLY]?.totalMarks) || 0) + 
+                           (Number(studentAllResults[ExamType.HALF_YEARLY]?.totalMarks) || 0) + 
+                           (Number(studentAllResults[ExamType.ANNUAL]?.totalMarks) || 0)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Summary Section */}
+                <div className="relative mt-0 px-10">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <span className="text-base font-black text-emerald-900">مجموعی فیصد:</span>
+                      <span className="text-xl font-black text-emerald-950 italic">
+                        {(((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
+                          (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
+                          (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 3).toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-base font-black text-emerald-900">مجموعی کیفیت:</span>
+                      <span className="text-2xl font-black text-emerald-950 font-nastaleeq">
+                        {calculateGrade((((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
+                          (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
+                          (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 300) * 100)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Signatures */}
+                <div className="relative mt-auto flex justify-between px-8 pt-4 pb-12">
+                  <div className="flex items-end gap-2">
+                    <p className="font-nastaleeq font-black text-emerald-900 text-2xl whitespace-nowrap">دستخط ناظم</p>
+                    <div className="w-32 border-b-2 border-emerald-900/30 pb-0.5 mb-2"></div>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <p className="font-nastaleeq font-black text-emerald-900 text-2xl whitespace-nowrap">دستخط مہتمم</p>
+                    <div className="w-32 border-b-2 border-emerald-900/30 pb-0.5 mb-2"></div>
                   </div>
                 </div>
               </div>
-
-              {/* Student Info Grid */}
-              <div className="relative grid grid-cols-2 gap-x-8 gap-y-3 mb-4 text-sm font-bold border-b border-gray-200 pb-3">
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">طالب علم:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{student.name}</span>
-                </div>
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">ولدیت:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{student.fatherName}</span>
-                </div>
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">رجسٹریشن نمبر:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-mono font-black text-base">{student.regNo}</span>
-                </div>
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">درجہ:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{student.currentClass} ({student.section})</span>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div className="relative flex-1">
-                <table className="w-full border-collapse border-2 border-emerald-900 text-center text-xs">
-                  <thead>
-                    <tr className="bg-emerald-900 text-white">
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white w-1/3">مضامین</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سہ ماہی</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">شش ماہی</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سالانہ</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">مجموعہ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {student.section !== Section.BANIN_HIFZ ? (
-                      CLASS_DATA[student.section as Section]?.find(c => c.name === student.currentClass)?.subjects.map((sub, idx) => {
-                        const q = studentAllResults[ExamType.QUARTERLY]?.subjects?.[sub] ?? '-';
-                        const h = studentAllResults[ExamType.HALF_YEARLY]?.subjects?.[sub] ?? '-';
-                        const a = studentAllResults[ExamType.ANNUAL]?.subjects?.[sub] ?? '-';
-                        const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
-                        return (
-                          <tr key={idx} className="border-b border-emerald-900">
-                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map((sub, idx) => {
-                        const keys = ['q1', 'q2', 'q3', 'lahja', 'safai', 'adiya'];
-                        const key = keys[idx];
-                        const q = studentAllResults[ExamType.QUARTERLY]?.hifzBreakdown?.[key] ?? '-';
-                        const h = studentAllResults[ExamType.HALF_YEARLY]?.hifzBreakdown?.[key] ?? '-';
-                        const a = studentAllResults[ExamType.ANNUAL]?.hifzBreakdown?.[key] ?? '-';
-                        const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
-                        return (
-                          <tr key={idx} className="border-b border-emerald-900">
-                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                    <tr className="bg-emerald-50/50 font-black text-sm border-t-2 border-emerald-900">
-                      <td className="p-3 border-r-2 border-emerald-900">کل حاصل کردہ نمبرات</td>
-                      <td className="p-3 border-r-2 border-emerald-900 font-black">{studentAllResults[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
-                      <td className="p-3 border-r-2 border-emerald-900 font-black">{studentAllResults[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
-                      <td className="p-3 border-r-2 border-emerald-900 font-black">{studentAllResults[ExamType.ANNUAL]?.totalMarks || '0'}</td>
-                      <td className="p-3 border-r-2 border-emerald-900 text-emerald-900 font-black">
-                        {(Number(studentAllResults[ExamType.QUARTERLY]?.totalMarks) || 0) + 
-                         (Number(studentAllResults[ExamType.HALF_YEARLY]?.totalMarks) || 0) + 
-                         (Number(studentAllResults[ExamType.ANNUAL]?.totalMarks) || 0)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Total Stats Row */}
-              <div className="relative mt-4 py-3 border-y-2 border-emerald-900 flex justify-around items-center font-black bg-emerald-50/30">
-                <div className="flex gap-4 items-center">
-                  <span className="text-gray-600">مجموعی فیصد:</span>
-                  <span className="text-xl text-emerald-900">
-                    {(((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
-                      (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
-                      (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 3).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="h-8 w-0.5 bg-emerald-900"></div>
-                <div className="flex gap-4 items-center">
-                  <span className="text-gray-600">مجموعی کیفیت:</span>
-                  <span className="text-xl text-emerald-900">
-                    {calculateGrade((((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
-                      (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
-                      (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 300) * 100)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Signatures */}
-              <div className="relative mt-12 flex justify-between px-4 pb-2">
-                <div className="text-center">
-                  <div className="w-32 border-b border-emerald-900 mb-2"></div>
-                  <p className="font-bold text-emerald-900">دستخط ناظم</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-32 border-b border-emerald-900 mb-2"></div>
-                  <p className="font-bold text-emerald-900">دستخط مہتمم</p>
-                </div>
-              </div>
-            </div>
             </motion.div>
           )}
         </div>
@@ -1031,13 +1006,6 @@ export default function Results() {
                   >
                     {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
                     پی ڈی ایف
-                  </button>
-                  <button 
-                    onClick={printCollective}
-                    className="bg-gray-800 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all font-urdu"
-                  >
-                    <FileText className="w-5 h-5" />
-                    اجتماعی پرنٹ
                   </button>
                 </div>
               </div>
@@ -1155,172 +1123,8 @@ export default function Results() {
                   </div>
                 </div>
               </div>
-          </motion.div>
+            </motion.div>
           )}
-        </div>
-      )}
-
-      {/* Printing Overlays */}
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          .print-area, .print-area * { visibility: visible; }
-          .print-area { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
-          @page { size: A4 landscape; margin: 1cm; }
-          .individual-page-mode-wrapper { 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            background: white;
-          }
-          .individual-page-mode { 
-            width: 15.5cm !important; 
-            height: 21.5cm !important; 
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          @page .individual-page-mode {
-            size: 155mm 215mm;
-            margin: 0;
-          }
-        }
-      `}</style>
-      
-      {/* Individual Print View */}
-      {printingIndividual && (
-        <div className="print-area font-urdu text-right individual-page-mode-wrapper" dir="rtl">
-           <div 
-              className="individual-page-mode bg-white relative overflow-hidden flex flex-col p-8 border-4 border-emerald-900 mx-auto" 
-              style={{ width: '15.5cm', height: '21.5cm' }}
-            >
-              {/* Watermark Logo */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-[0.08] pointer-events-none">
-                <img src={logo} alt="Watermark" className="w-[85%] object-contain" />
-              </div>
-
-              {/* Header */}
-              <div className="relative text-center border-b-2 border-emerald-900 pb-3 mb-4">
-                <div className="flex flex-col items-center gap-4">
-                  <h1 className="text-3xl font-black text-emerald-900 leading-tight">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
-                  <div className="mt-4 flex justify-center">
-                    <p className="text-xl font-bold bg-emerald-900 text-white px-10 pt-3 pb-8 rounded-full shadow-md inline-flex items-center justify-center leading-none">سالانہ تعلیمی رپورٹ</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Student Info Grid */}
-              <div className="relative grid grid-cols-2 gap-x-8 gap-y-3 mb-4 text-sm font-bold border-b border-gray-200 pb-3">
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">طالب علم:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{printingIndividual.studentName}</span>
-                </div>
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">ولدیت:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{printingIndividual.fatherName}</span>
-                </div>
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">رجسٹریشن نمبر:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-mono font-black text-base">{printingIndividual.regNo}</span>
-                </div>
-                <div className="flex gap-2 items-baseline">
-                  <span className="text-emerald-900 whitespace-nowrap">درجہ:</span>
-                  <span className="border-b border-gray-300 flex-1 text-center font-black text-base">{printingIndividual.class}</span>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div className="relative flex-1">
-                <table className="w-full border-collapse border-2 border-emerald-900 text-center text-xs">
-                  <thead>
-                    <tr className="bg-emerald-900 text-white">
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white w-1/3">مضامین</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سہ ماہی</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">شش ماہی</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">سالانہ</th>
-                      <th className="p-2 border-r-2 border-emerald-800 font-black text-white">مجموعہ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {student?.section !== Section.BANIN_HIFZ ? (
-                      CLASS_DATA[student?.section as Section]?.find(c => c.name === printingIndividual.class)?.subjects.map((sub, idx) => {
-                        const q = printingIndividual.allExams?.[ExamType.QUARTERLY]?.subjects?.[sub] ?? '-';
-                        const h = printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.subjects?.[sub] ?? '-';
-                        const a = printingIndividual.allExams?.[ExamType.ANNUAL]?.subjects?.[sub] ?? '-';
-                        const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
-                        return (
-                          <tr key={idx} className="border-b border-emerald-900">
-                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map((sub, idx) => {
-                        const keys = ['q1', 'q2', 'q3', 'lahja', 'safai', 'adiya'];
-                        const key = keys[idx];
-                        const q = printingIndividual.allExams?.[ExamType.QUARTERLY]?.hifzBreakdown?.[key] ?? '-';
-                        const h = printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.hifzBreakdown?.[key] ?? '-';
-                        const a = printingIndividual.allExams?.[ExamType.ANNUAL]?.hifzBreakdown?.[key] ?? '-';
-                        const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
-                        return (
-                          <tr key={idx} className="border-b border-emerald-900">
-                            <td className="p-2 font-bold border-r-2 border-emerald-900 bg-emerald-50/20">{sub}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{q}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{h}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-bold">{a}</td>
-                            <td className="p-2 border-r-2 border-emerald-900 font-black text-emerald-900">{total || '-'}</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                    <tr className="bg-emerald-50/50 font-black text-sm border-t-2 border-emerald-900">
-                      <td className="p-3 border-r-2 border-emerald-900">کل حاصل کردہ نمبرات</td>
-                      <td className="p-3 border-r-2 border-emerald-900 font-black">{printingIndividual.allExams?.[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
-                      <td className="p-3 border-r-2 border-emerald-900 font-black">{printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
-                      <td className="p-3 border-r-2 border-emerald-900 font-black">{printingIndividual.allExams?.[ExamType.ANNUAL]?.totalMarks || '0'}</td>
-                      <td className="p-3 border-r-2 border-emerald-900 text-emerald-900 font-black">
-                        {(Number(printingIndividual.allExams?.[ExamType.QUARTERLY]?.totalMarks) || 0) + 
-                         (Number(printingIndividual.allExams?.[ExamType.HALF_YEARLY]?.totalMarks) || 0) + 
-                         (Number(printingIndividual.allExams?.[ExamType.ANNUAL]?.totalMarks) || 0)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Total Stats Row */}
-              <div className="relative mt-4 py-3 border-y-2 border-emerald-900 flex justify-around items-center font-black bg-emerald-50/30">
-                <div className="flex gap-4 items-center">
-                  <span className="text-gray-600">مجموعی فیصد:</span>
-                  <span className="text-xl text-emerald-900">
-                    {printingIndividual.percentage.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="h-8 w-0.5 bg-emerald-900"></div>
-                <div className="flex gap-4 items-center">
-                  <span className="text-gray-600">مجموعی کیفیت:</span>
-                  <span className="text-xl text-emerald-900">
-                    {printingIndividual.grade}
-                  </span>
-                </div>
-              </div>
-
-              {/* Signatures */}
-              <div className="relative mt-12 flex justify-between px-4 pb-2">
-                <div className="text-center">
-                  <div className="w-32 border-b border-emerald-900 mb-2 font-bold"></div>
-                  <p className="font-bold text-emerald-900">دستخط ناظم</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-32 border-b border-emerald-900 mb-2 font-bold"></div>
-                  <p className="font-bold text-emerald-900">دستخط مہتمم</p>
-                </div>
-              </div>
-            </div>
         </div>
       )}
     </div>

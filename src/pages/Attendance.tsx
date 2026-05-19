@@ -3,9 +3,10 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Section, Student, AttendanceRecord } from '../types';
 import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
-import { ClipboardCheck, UserCheck, UserX, UserMinus, Send, Loader2, Calendar as CalendarIcon, CheckCircle2, Printer, FileText, Download, FileSpreadsheet } from 'lucide-react';
+import { ClipboardCheck, UserCheck, UserX, UserMinus, Send, Loader2, Calendar as CalendarIcon, CheckCircle2, FileText, Download, FileSpreadsheet } from 'lucide-react';
 import { cn, sanitizeHtml2Canvas } from '../lib/utils';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import logo from '../assets/logo.png';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -30,10 +31,6 @@ export default function Attendance() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   
   const printRef = React.useRef<HTMLDivElement>(null);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const exportToExcel = () => {
     if (students.length === 0) return;
@@ -65,19 +62,21 @@ export default function Attendance() {
     setLoading(true);
     try {
       const canvas = await html2canvas(printRef.current, {
-        scale: 2,
+        scale: 4, // Higher scale for better resolution
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        imageTimeout: 0,
         onclone: (clonedDoc) => {
           sanitizeHtml2Canvas(clonedDoc);
         }
       });
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF('l', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const margin = 5;
+      pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
       pdf.save(`Attendance_${currentClass}_${URDU_MONTHS[selectedMonth]}.pdf`);
     } catch (e) {
       console.error(e);
@@ -312,20 +311,21 @@ export default function Attendance() {
                 <FileSpreadsheet className="w-4 h-4" />
                 ایکسل فائل
               </button>
-              <button onClick={handlePrint} className="bg-black text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2">
-                <Printer className="w-4 h-4" />
-                پرنٹ کریں
-              </button>
             </div>
             
             <div className="overflow-x-auto pb-4 custom-scrollbar">
               <div 
                 id="print-area" 
                 ref={printRef} 
-                className="pt-1 px-8 pb-12 min-w-[1100px] bg-white mx-auto shadow-sm border border-gray-100" 
+                className="pt-1 px-8 pb-12 min-w-[1100px] bg-white mx-auto shadow-sm border border-gray-100 relative" 
                 style={{ direction: 'rtl', width: '297mm', fontFamily: 'system-ui' }}
               >
-                <div className="w-full mb-6 border-b-2 border-emerald-900 pb-4">
+                {/* Watermark Logo */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none overflow-hidden">
+                  <img src={logo} alt="Watermark" className="w-[400px] h-[400px] object-contain" />
+                </div>
+
+                <div className="relative w-full mb-6 border-b-2 border-emerald-900 pb-4">
                   <div className="flex justify-between items-center bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
                     <div className="text-xl font-nastaleeq font-black text-emerald-900 leading-tight">
                       جامعہ تعلیم القرآن ناگمان ضلع پشاور

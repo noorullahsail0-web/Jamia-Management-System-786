@@ -46,7 +46,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-1">
           <h1 className="text-4xl font-black text-gray-900 tracking-tight">خوش آمدید، نوراللہ صاحب!</h1>
-          <p className="text-gray-500 font-bold text-lg">جامعہ تعلیم القرآن کے تعلیمی امور کا جائزہ</p>
+          <p className="text-gray-500 font-bold text-lg">جامعہ تعلیم القرآن ناگمان ضلع پشاور کے تعلیمی امور کا جائزہ</p>
         </div>
         <div className="bg-white px-6 py-3 rounded-2xl shadow-premium border border-gray-100 flex items-center gap-3">
           <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />

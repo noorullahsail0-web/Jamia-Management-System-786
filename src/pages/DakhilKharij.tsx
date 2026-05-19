@@ -13,7 +13,6 @@ import { db } from '../lib/firebase';
 import { Student, Section } from '../types';
 import { 
   Search, 
-  Printer, 
   Download, 
   UserMinus, 
   UserCheck,
@@ -29,6 +28,7 @@ import {
 import { cn, sanitizeHtml2Canvas } from '../lib/utils';
 import { format } from 'date-fns';
 import schoolName from '../assets/school_name.png';
+import logo from '../assets/logo.png';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -163,11 +163,12 @@ export default function DakhilKharij() {
       
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
-      const canvas = await html2canvas(page, {
-          scale: 2,
+        const canvas = await html2canvas(page, {
+          scale: 4, // Increased scale for much higher quality
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
+          imageTimeout: 0,
           onclone: (clonedDoc) => {
             sanitizeHtml2Canvas(clonedDoc);
             
@@ -183,17 +184,17 @@ export default function DakhilKharij() {
           }
         });
         
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
         const pdfWidth = doc.internal.pageSize.getWidth();
         const pdfHeight = doc.internal.pageSize.getHeight();
         
-        const margin = 8;
+        const margin = 5; // Reduced margin for larger content area
         const availableWidth = pdfWidth - (margin * 2);
         const contentWidth = availableWidth;
         const contentHeight = (canvas.height * contentWidth) / canvas.width;
         
         if (i > 0) doc.addPage();
-        doc.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+        doc.addImage(imgData, 'JPEG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
       }
       
       doc.save(`Dakhil_Kharij_Register_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
@@ -203,10 +204,6 @@ export default function DakhilKharij() {
     } finally {
       setDownloadingPDF(false);
     }
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   const downloadExcel = () => {
@@ -266,13 +263,6 @@ export default function DakhilKharij() {
            >
              {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
              <span>پی ڈی ایف</span>
-           </button>
-           <button 
-             onClick={handlePrint}
-             className="px-6 py-3 rounded-xl font-bold text-base transition-all bg-emerald-600 text-white shadow-lg hover:bg-emerald-500 flex items-center gap-2"
-           >
-             <Printer className="w-5 h-5" />
-             <span>پرنٹ کریں (A4)</span>
            </button>
         </div>
       </div>
@@ -430,23 +420,28 @@ export default function DakhilKharij() {
             style={{ 
               width: '297mm', 
               height: '210mm',
-              padding: '10mm',
+              padding: '6mm',
               position: 'relative',
               boxSizing: 'border-box'
             }}
           >
             {/* Inner Border (Hashiya) */}
-            <div className="absolute inset-4 border-2 border-emerald-900 pointer-events-none opacity-20"></div>
+            <div className="absolute inset-2 border-2 border-emerald-900 pointer-events-none opacity-20"></div>
+
+            {/* Watermark Logo */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.05]">
+              <img src={logo} alt="" className="w-[120mm] h-[120mm] object-contain grayscale" />
+            </div>
 
             {/* Header for each printed page */}
-            <div className="hidden print-header-active flex flex-col items-center justify-center mb-4 pt-1">
-              <h1 className="text-4xl font-nastaleeq font-black text-emerald-950 mb-2 underline underline-offset-8">رجسٹر داخل خارج</h1>
+            <div className="hidden print-header-active flex flex-col items-center justify-center mb-1 pt-0">
+              <h1 className="text-4xl font-nastaleeq font-black text-emerald-950 mb-0 underline underline-offset-4">رجسٹر داخل خارج</h1>
               
-              <div className="w-full flex justify-between items-center px-6 py-2 border-y-2 border-emerald-900 bg-emerald-50/30">
+              <div className="w-full flex justify-between items-center px-6 py-1 border-y border-emerald-900 bg-emerald-50/20">
                 <div className="flex gap-6 items-center">
                   <span className="text-xl font-nastaleeq font-black text-emerald-900">جامعہ تعلیم القرآن ناگمان ضلع پشاور</span>
-                  <span className="text-[11px] font-bold text-gray-600">ایڈریس: شبقدرروڈ نزدشبقدرفلورملز ناگمان ضلع پشاور</span>
-                  <span className="text-[11px] font-bold text-gray-600">الحاق نمبر: 06838</span>
+                  <span className="text-[10px] font-bold text-gray-600">ایڈریس: شبقدرروڈ نزدشبقدرفلورملز ناگمان ضلع پشاور</span>
+                  <span className="text-[10px] font-bold text-gray-600">الحاق نمبر: 06838</span>
                 </div>
                 <div className="text-xl font-nastaleeq font-black text-emerald-950">
                   سال تعلیمی: 2026
@@ -457,36 +452,36 @@ export default function DakhilKharij() {
             <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full text-right border-collapse print:table table-fixed border-2 border-emerald-900">
                 <thead>
-                  <tr className="bg-emerald-900 text-white h-12 font-nastaleeq">
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">داخلہ نمبر</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[9%] text-center text-white">تاریخ داخلہ</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[12%] text-center text-white">نام طالب علم</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[12%] text-center text-white">ولدیت</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[9%] text-center text-white">تاریخ پیدائش</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[14%] text-center text-white">سکونت</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">جماعت (داخل)</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">جماعت (چھوڑا)</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">تاریخ اخراج</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[8%] text-center text-white">وجہ اخراج</th>
-                    <th className="px-1 border border-emerald-800 text-[13px] font-black w-[4%] text-center text-white">کیفیت</th>
+                  <tr className="bg-emerald-900 text-white h-11 font-nastaleeq">
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[8%] text-center text-white">داخلہ نمبر</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[9%] text-center text-white">تاریخ داخلہ</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[12%] text-center text-white">نام طالب علم</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[12%] text-center text-white">ولدیت</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[9%] text-center text-white">تاریخ پیدائش</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[14%] text-center text-white">سکونت</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[8%] text-center text-white">جماعت (داخل)</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[8%] text-center text-white">جماعت (چھوڑا)</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[8%] text-center text-white">تاریخ اخراج</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[8%] text-center text-white">وجہ اخراج</th>
+                    <th className="px-1 border border-emerald-800 text-[12px] font-black w-[4%] text-center text-white">کیفیت</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageStudents.map((s) => (
-                    <tr key={s.id} className="h-10 even:bg-emerald-50/20 border-b border-emerald-900/10">
+                    <tr key={s.id} className="h-9 even:bg-emerald-50/20 border-b border-emerald-900/10">
                       <td className="px-1 border border-emerald-100 text-[11px] font-mono text-center truncate">{s.regNo}</td>
-                      <td className="px-1 border border-emerald-100 text-[11px] text-center">{s.admissionDate}</td>
-                      <td className="px-1 border border-emerald-100 text-[14px] font-nastaleeq font-black text-center truncate">{s.name}</td>
-                      <td className="px-1 border border-emerald-100 text-[13px] font-nastaleeq font-bold text-center truncate">{s.fatherName}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.admissionDate}</td>
+                      <td className="px-1 border border-emerald-100 text-[13px] font-nastaleeq font-black text-center truncate">{s.name}</td>
+                      <td className="px-1 border border-emerald-100 text-[12px] font-nastaleeq font-bold text-center truncate">{s.fatherName}</td>
                       <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.dob}</td>
-                      <td className="px-1 border border-emerald-100 text-[10px] text-center truncate px-2">{s.address}</td>
+                      <td className="px-1 border border-emerald-100 text-[9px] text-center truncate px-2">{s.address}</td>
                       <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.currentClass}</td>
                       <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.leavingClass || '-'}</td>
                       <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.leavingDate || '-'}</td>
-                      <td className="px-1 border border-emerald-100 text-[10px] text-center truncate font-nastaleeq">{s.leavingReason || '-'}</td>
-                      <td className="px-1 border border-emerald-100 text-[10px] text-center">
+                      <td className="px-1 border border-emerald-100 text-[9px] text-center truncate font-nastaleeq">{s.leavingReason || '-'}</td>
+                      <td className="px-1 border border-emerald-100 text-[9px] text-center">
                         <span className={cn(
-                          "font-black font-nastaleeq text-[10px]",
+                          "font-black font-nastaleeq text-[9px]",
                           s.status === 'active' ? "text-emerald-700" : "text-red-700"
                         )}>
                           {s.status === 'active' ? 'موجود' : 'خارج'}
@@ -496,7 +491,7 @@ export default function DakhilKharij() {
                   ))}
                   {/* Always fill up to 15 rows */}
                   {Array.from({ length: rowsPerPage - pageStudents.length }).map((_, i) => (
-                    <tr key={`extra-${i}`} className="h-10 border-b border-emerald-900/10">
+                    <tr key={`extra-${i}`} className="h-9 border-b border-emerald-900/10">
                       {Array.from({ length: 11 }).map((_, j) => (
                         <td key={`ecell-${i}-${j}`} className="border border-emerald-100"></td>
                       ))}
@@ -506,15 +501,15 @@ export default function DakhilKharij() {
               </table>
               
               {/* Signatures for print */}
-              <div className="hidden print:flex justify-between mt-6 px-8">
+              <div className="hidden print:flex justify-between mt-4 px-8">
                 <div className="text-center font-nastaleeq">
-                  <p className="text-xs font-black text-emerald-900 border-b border-emerald-900 px-4">دستخط مہتمم / ناظم تعلیمات</p>
+                  <p className="text-[11px] font-black text-emerald-900 border-b border-emerald-900 px-4">دستخط مہتمم / ناظم تعلیمات</p>
                 </div>
                 <div className="text-center font-nastaleeq">
-                  <p className="text-xs font-black text-emerald-900 border-b border-emerald-900 px-4">مہر مدرسہ</p>
+                  <p className="text-[11px] font-black text-emerald-900 border-b border-emerald-900 px-4">مہر مدرسہ</p>
                 </div>
                 <div className="text-center font-nastaleeq">
-                  <p className="text-xs font-black text-emerald-900 border-b border-emerald-900 px-4">تاریخ: {format(new Date(), 'dd-MM-yyyy')}</p>
+                  <p className="text-[11px] font-black text-emerald-900 border-b border-emerald-900 px-4">تاریخ: {format(new Date(), 'dd-MM-yyyy')}</p>
                 </div>
               </div>
             </div>
@@ -535,7 +530,7 @@ export default function DakhilKharij() {
             top: 0;
             width: 297mm;
             height: 210mm;
-            padding: 10mm;
+            padding: 6mm;
             color: #000000 !important;
             background: #ffffff !important;
             box-sizing: border-box;
@@ -570,13 +565,13 @@ export default function DakhilKharij() {
             width: 287mm !important;
             height: 200mm !important;
             margin: 0 auto !important;
-            padding: 5mm !important;
+            padding: 4mm !important;
             page-break-after: always !important;
             border: 2px solid #064e3b !important;
             position: relative !important;
           }
           table { width: 100% !important; border-collapse: collapse !important; border: 2px solid #064e3b !important; table-layout: fixed !important; }
-          th, td { border: 1px solid #064e3b !important; padding: 2px 4px !important; line-height: 1.2 !important; height: 38px !important; }
+          th, td { border: 1px solid #064e3b !important; padding: 1px 4px !important; line-height: 1.1 !important; height: 35px !important; }
           thead th { background-color: #064e3b !important; color: white !important; font-weight: 900 !important; }
           .print-header-active { display: flex !important; }
         }
