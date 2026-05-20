@@ -6,7 +6,7 @@ import { collection, addDoc, getDocs, query, where, orderBy, limit, updateDoc, d
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Section, Student } from '../types';
 import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
-import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save, Trash2, AlertCircle, GraduationCap, Users, CheckSquare, Square, TrendingUp } from 'lucide-react';
 import { cn, compressImage } from '../lib/utils';
 
 export default function Admission() {
@@ -19,6 +19,19 @@ export default function Admission() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [processing, setProcessing] = useState(false);
+
+  // Promotion feature states
+  const [showPromotionModal, setShowPromotionModal] = useState(false);
+  const [promoSection, setPromoSection] = useState<Section | ''>('');
+  const [promoClass, setPromoClass] = useState('');
+  const [promoStudents, setPromoStudents] = useState<Student[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoTargetClass, setPromoTargetClass] = useState('');
+  const [promoRegenerateReg, setPromoRegenerateReg] = useState(true);
+  const [selectedPromoIds, setSelectedPromoIds] = useState<string[]>([]);
+  
+  const [showConfirmSubModal, setShowConfirmSubModal] = useState(false);
+  const [confirmMsg, setConfirmMsg] = useState('');
   
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm();
   
@@ -28,6 +41,136 @@ export default function Admission() {
   useEffect(() => {
     fetchStudents();
   }, []);
+
+  // Sync Promotion students when class/section filters change
+  useEffect(() => {
+    if (promoSection && promoClass) {
+      fetchPromoStudents();
+    } else {
+      setPromoStudents([]);
+    }
+  }, [promoSection, promoClass]);
+
+  const fetchPromoStudents = async () => {
+    setPromoLoading(true);
+    try {
+      const q = query(
+        collection(db, 'students'),
+        where('section', '==', promoSection),
+        where('currentClass', '==', promoClass),
+        where('status', '==', 'active')
+      );
+      const snapshot = await getDocs(q);
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+      list.sort((a, b) => a.name.localeCompare(b.name, 'ur'));
+      setPromoStudents(list);
+      setSelectedPromoIds(list.map(s => s.id));
+      
+      const classes = CLASS_DATA[promoSection as Section] || [];
+      const idx = classes.findIndex(c => c.name === promoClass);
+      if (idx !== -1 && idx < classes.length - 1) {
+        setPromoTargetClass(classes[idx + 1].name);
+      } else {
+        setPromoTargetClass('graduated');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('طلباء لوڈ کرنے میں غلطی ہوئی۔');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const triggerPromotionConfirm = () => {
+    if (selectedPromoIds.length === 0) {
+      alert('براہ کرم پروموٹ کرنے کے لیے کم از کم ایک طالب علم کا انتخاب کریں۔');
+      return;
+    }
+    
+    const msg = promoTargetClass === 'graduated'
+      ? `کیا آپ واقعی منتخب ${selectedPromoIds.length} طلباء کو فارغ التحصیل (Graduated) کرنا چاہتے ہیں؟`
+      : `کیا آپ واقعی منتخب ${selectedPromoIds.length} طلباء کو درجہ "${promoTargetClass}" میں پروموٹ کرنا چاہتے ہیں؟`;
+      
+    setConfirmMsg(msg);
+    setShowConfirmSubModal(true);
+  };
+
+  const handlePromoteStudents = async () => {
+    setShowConfirmSubModal(false);
+    setProcessing(true);
+    setUploadingInfo('پروموشن کا عمل جاری ہے...');
+    try {
+      let classObj = null;
+      let targetCode = '00';
+      if (promoTargetClass !== 'graduated') {
+        classObj = CLASS_DATA[promoSection as Section]?.find(c => c.name === promoTargetClass);
+        targetCode = classObj?.code || '00';
+      }
+      
+      const year = new Date().getFullYear().toString();
+      const prefix = SECTION_PREFIXES[promoSection as Section] || 'DN';
+      
+      let currentSerial = 1;
+      if (promoRegenerateReg && promoTargetClass !== 'graduated') {
+        const q = query(
+          collection(db, 'students'),
+          where('section', '==', promoSection),
+          where('currentClass', '==', promoTargetClass)
+        );
+        const snapshot = await getDocs(q);
+        let maxSerial = 0;
+        snapshot.docs.forEach(docObj => {
+          const regNo = docObj.data().regNo || '';
+          const parts = regNo.split(/[- ]/);
+          const lastPart = parts[parts.length - 1];
+          const lastSerial = parseInt(lastPart);
+          if (!isNaN(lastSerial) && lastSerial > maxSerial) {
+            maxSerial = lastSerial;
+          }
+        });
+        currentSerial = maxSerial + 1;
+      }
+      
+      let successCount = 0;
+      for (const studentId of selectedPromoIds) {
+        const student = promoStudents.find(s => s.id === studentId);
+        if (!student) continue;
+        
+        const updates: any = {
+          updatedAt: new Date().toISOString()
+        };
+        
+        if (promoTargetClass === 'graduated') {
+          updates.status = 'graduated';
+        } else {
+          updates.currentClass = promoTargetClass;
+          if (promoRegenerateReg) {
+            const classCodeStr = targetCode.toString().padStart(2, '0');
+            const serialStr = currentSerial.toString().padStart(2, '0');
+            updates.regNo = `${prefix}${year}-${classCodeStr}-${serialStr}`;
+            currentSerial++;
+          }
+        }
+        
+        await updateDoc(doc(db, 'students', studentId), updates);
+        successCount++;
+      }
+      
+      alert(`کامیابی! ${successCount} طلباء کو پروموٹ کر دیا گیا۔`);
+      setShowPromotionModal(false);
+      setPromoStudents([]);
+      setPromoClass('');
+      setPromoSection('');
+      setSelectedPromoIds([]);
+      fetchStudents();
+    } catch (error: any) {
+      console.error(error);
+      alert('پروموشن کے عمل کے دوران غلطی ہوئی۔ تفصیل: ' + (error?.message || error));
+    } finally {
+      setProcessing(false);
+      setUploadingInfo(null);
+    }
+  };
 
   const fetchStudents = async () => {
     try {
@@ -67,20 +210,22 @@ export default function Admission() {
     const q = query(
       collection(db, 'students'),
       where('section', '==', section),
-      where('currentClass', '==', watch('currentClass')),
-      orderBy('regNo', 'desc'),
-      limit(1)
+      where('currentClass', '==', watch('currentClass'))
     );
     const snapshot = await getDocs(q);
-    let nextSerial = 1;
+    let maxSerial = 0;
     
-    if (!snapshot.empty) {
-      const lastReg = snapshot.docs[0].data().regNo;
-      const parts = lastReg.split(/[- ]/);
-      const lastSerial = parseInt(parts[parts.length - 1]);
-      if (!isNaN(lastSerial)) nextSerial = lastSerial + 1;
-    }
+    snapshot.docs.forEach(docObj => {
+      const regNo = docObj.data().regNo || '';
+      const parts = regNo.split(/[- ]/);
+      const lastPart = parts[parts.length - 1];
+      const lastSerial = parseInt(lastPart);
+      if (!isNaN(lastSerial) && lastSerial > maxSerial) {
+        maxSerial = lastSerial;
+      }
+    });
 
+    const nextSerial = maxSerial + 1;
     const classCodeStr = classCode.toString().padStart(2, '0');
     const serialStr = nextSerial.toString().padStart(2, '0');
     
@@ -190,13 +335,29 @@ export default function Admission() {
           <h1 className="text-2xl font-bold text-gray-900">داخلہ فارم / طلباء کی فہرست</h1>
           <p className="text-gray-500">نئے طلباء کا اندراج کریں اور موجودہ ریکارڈ دیکھیں</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl transition-all shadow-md"
-        >
-          <UserPlus className="w-5 h-5" />
-          <span>نیا طالب علم شامل کریں</span>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => {
+              setPromoSection('');
+              setPromoClass('');
+              setPromoTargetClass('');
+              setPromoStudents([]);
+              setSelectedPromoIds([]);
+              setShowPromotionModal(true);
+            }}
+            className="flex items-center justify-center gap-2 bg-[#1a237e] hover:bg-[#0d47a1] text-white px-5 py-3 rounded-xl transition-all shadow-md font-bold text-sm"
+          >
+            <GraduationCap className="w-5 h-5 text-indigo-200 animate-pulse" />
+            <span>طلباء کی پروموشن (اگلا درجہ)</span>
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl transition-all shadow-md font-bold text-sm"
+          >
+            <UserPlus className="w-5 h-5" />
+            <span>نیا طالب علم شامل کریں</span>
+          </button>
+        </div>
       </div>
 
       {/* Student List */}
@@ -511,6 +672,292 @@ export default function Admission() {
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-all"
                 >
                   منسوخ کریں
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Student Promotion Modal */}
+      {showPromotionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl relative my-8 font-urdu"
+            dir="rtl"
+          >
+            {/* Modal Header */}
+            <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-3xl z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-50 text-indigo-700 rounded-2xl">
+                  <GraduationCap className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-900">طلباء کی ترقی (اگلا درجہ / پروموشن)</h3>
+                  <p className="text-gray-500 text-sm mt-0.5">طلباء کو اگلے سال کی کلاسز میں ترقی دیں اور نیا رجسٹریشن نمبر تفویض کریں۔</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowPromotionModal(false);
+                  setPromoSection('');
+                  setPromoClass('');
+                  setPromoStudents([]);
+                  setSelectedPromoIds([]);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[75vh] custom-scrollbar" dir="ltr">
+              <div className="space-y-6 w-full text-right" dir="rtl">
+              
+              {/* Filter Selection Panel */}
+              <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-right font-black text-gray-700">شعبہ منتخب کریں</label>
+                  <select 
+                    value={promoSection} 
+                    onChange={(e) => {
+                      setPromoSection(e.target.value as Section);
+                      setPromoClass('');
+                      setPromoStudents([]);
+                    }}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800"
+                  >
+                    <option value="">شعبہ منتخب کریں</option>
+                    {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-right font-black text-gray-700">موجودہ درجہ منتخب کریں</label>
+                  <select 
+                    value={promoClass} 
+                    onChange={(e) => setPromoClass(e.target.value)}
+                    disabled={!promoSection}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 disabled:opacity-50"
+                  >
+                    <option value="">کلاس منتخب کریں</option>
+                    {promoSection && CLASS_DATA[promoSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Targets & Settings Panel */}
+              {promoSection && promoClass && (
+                <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                  <div className="space-y-2">
+                    <label className="block text-right font-black text-indigo-950">ہدف درجہ (اگلی کلاس)</label>
+                    <select 
+                      value={promoTargetClass} 
+                      onChange={(e) => setPromoTargetClass(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-bold text-indigo-900"
+                    >
+                      <option value="graduated">تکمیل / فارغ التحصیل (Graduated)</option>
+                      {CLASS_DATA[promoSection as Section].map(c => (
+                        <option key={c.name} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-indigo-700/80 font-bold">خودکار طور پر اگلے سال کی کلاس منتخب کی گئی ہے۔ آپ مینوئل تبدیل بھی کر سکتے ہیں۔</p>
+                  </div>
+
+                  <div className="flex items-center justify-end h-full pt-6">
+                    <label className="flex items-center gap-3 cursor-pointer select-none group">
+                      <span className="font-bold text-indigo-950 group-hover:text-indigo-800 transition-colors">نیا رجسٹریشن نمبر لاگو کریں (اگلے سال کی کوڈنگ کے مطابق)</span>
+                      <input 
+                        type="checkbox" 
+                        checked={promoRegenerateReg} 
+                        onChange={(e) => setPromoRegenerateReg(e.target.checked)}
+                        disabled={promoTargetClass === 'graduated'}
+                        className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-indigo-300 rounded disabled:opacity-50"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Student Checklist Table */}
+              {promoSection && promoClass && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (selectedPromoIds.length === promoStudents.length) {
+                            setSelectedPromoIds([]);
+                          } else {
+                            setSelectedPromoIds(promoStudents.map(s => s.id));
+                          }
+                        }}
+                        className="flex items-center gap-2 text-sm font-bold text-[#1a237e] hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
+                      >
+                        {selectedPromoIds.length === promoStudents.length ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                        <span>سب منتخب کریں</span>
+                      </button>
+                    </div>
+                    <p className="text-gray-500 text-sm font-bold">مجموعی طلباء: <span className="text-gray-900 font-extrabold">{promoStudents.length}</span> • منتخب شدہ: <span className="text-indigo-600 font-extrabold">{selectedPromoIds.length}</span></p>
+                  </div>
+
+                  {promoLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
+                      <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                      <span className="font-bold">طلباء کی تفصیلات لوڈ ہو رہی ہیں...</span>
+                    </div>
+                  ) : promoStudents.length === 0 ? (
+                    <div className="text-center py-12 border border-dashed border-gray-200 rounded-2xl text-gray-400 italic">
+                      اس کلاس میں کوئی فعال طالب علم نہیں ہے۔
+                    </div>
+                  ) : (
+                    <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                      <table className="w-full text-right">
+                        <thead>
+                          <tr className="bg-gray-50 text-gray-600 text-[13px] border-b">
+                            <th className="px-5 py-3 font-semibold text-center w-16">انتخاب</th>
+                            <th className="px-5 py-3 font-semibold w-24">موجودہ داخلہ نمبر</th>
+                            <th className="px-5 py-3 font-semibold">نام طالب علم</th>
+                            <th className="px-5 py-3 font-semibold">ولدیت</th>
+                            <th className="px-5 py-3 font-semibold w-52 text-indigo-700 text-center">پروموشن کے بعد رجسٹریشن نمبر</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y text-sm bg-white">
+                          {promoStudents.map((s, index) => {
+                            const isSelected = selectedPromoIds.includes(s.id);
+                            
+                            // Calculate preview target regNo
+                            let newRegPreview = '-';
+                            if (promoTargetClass !== 'graduated') {
+                              if (!promoRegenerateReg) {
+                                newRegPreview = s.regNo;
+                              } else {
+                                const classObj = CLASS_DATA[promoSection as Section]?.find(c => c.name === promoTargetClass);
+                                const targetCode = classObj?.code || '00';
+                                const prefix = SECTION_PREFIXES[promoSection as Section] || 'DN';
+                                const year = new Date().getFullYear().toString();
+                                newRegPreview = `${prefix}${year}-${targetCode.padStart(2, '0')}-${String(index + 1).padStart(2, '0')} (تقریباً)`;
+                              }
+                            } else {
+                              newRegPreview = 'تکمیل / فارغ التحصیل';
+                            }
+
+                            return (
+                              <tr key={s.id} className={cn("hover:bg-gray-50 transition-colors", !isSelected && "opacity-65")}>
+                                <td className="px-5 py-3.5 text-center">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedPromoIds(prev => [...prev, s.id]);
+                                      } else {
+                                        setSelectedPromoIds(prev => prev.filter(id => id !== s.id));
+                                      }
+                                    }}
+                                    className="w-4.5 h-4.5 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer"
+                                  />
+                                </td>
+                                <td className="px-5 py-3.5 font-mono text-gray-500 font-bold">{s.regNo}</td>
+                                <td className="px-5 py-3.5 font-bold text-gray-950 text-base">{s.name}</td>
+                                <td className="px-5 py-3.5 text-gray-700 font-bold">{s.fatherName}</td>
+                                <td className="px-5 py-3.5 text-center">
+                                  {promoTargetClass === 'graduated' ? (
+                                    <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg text-xs font-black">فارغ التحصیل</span>
+                                  ) : (
+                                    <span className="bg-indigo-50 text-indigo-900 border border-indigo-100 px-3 py-1 rounded-lg font-mono text-xs font-black block mx-auto w-fit">
+                                      {newRegPreview}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t flex justify-end gap-3 rounded-b-3xl bg-gray-50">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPromotionModal(false);
+                  setPromoSection('');
+                  setPromoClass('');
+                  setPromoStudents([]);
+                  setSelectedPromoIds([]);
+                }}
+                className="bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition-all text-sm"
+              >
+                بند کریں
+              </button>
+
+              {promoSection && promoClass && promoStudents.length > 0 && (
+                <button
+                  type="button"
+                  onClick={triggerPromotionConfirm}
+                  disabled={processing || selectedPromoIds.length === 0}
+                  className="bg-[#1a237e] hover:bg-[#0d47a1] disabled:bg-gray-300 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-100 text-sm"
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>{uploadingInfo || 'پروموٹ ہو رہا ہے...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="w-5 h-5" />
+                      <span>منتخب طلباء پروموٹ کریں ({selectedPromoIds.length})</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Promotion Custom Confirmation Dialog */}
+      {showConfirmSubModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 font-urdu"
+            dir="rtl"
+          >
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-black text-gray-900">ترقی کی تصدیق</h3>
+              <p className="text-gray-600 leading-relaxed font-bold text-sm">{confirmMsg}</p>
+              
+              <div className="flex gap-3 justify-center pt-4">
+                <button
+                  type="button"
+                  onClick={handlePromoteStudents}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-md text-sm"
+                >
+                  جی ہاں، پروموٹ کریں
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmSubModal(false)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-6 py-2.5 rounded-xl transition-all text-sm"
+                >
+                  کینسل
                 </button>
               </div>
             </div>

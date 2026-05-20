@@ -46,8 +46,7 @@ service cloud.firestore {
     match /students/{studentId} {
       allow read, list: if isSignedIn();
       allow create: if isAdmin() && isValidId(studentId) && isValidStudent(incoming());
-      allow update: if isAdmin() && isValidStudent(incoming()) 
-                     && incoming().regNo == existing().regNo;
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 

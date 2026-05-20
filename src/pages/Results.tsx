@@ -141,6 +141,49 @@ export default function Results() {
     return 'راسب';
   };
 
+  const handleCellKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    rowIndex: number,
+    colIndex: number,
+    maxRows: number,
+    maxCols: number
+  ) => {
+    let targetRow = rowIndex;
+    let targetCol = colIndex;
+
+    if (e.key === 'ArrowUp') {
+      targetRow = rowIndex - 1;
+      e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+      targetRow = rowIndex + 1;
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft') {
+      // In RTL table, Left Arrow should move visually to the Left column.
+      // Columns layout as Col 0 (Rightmost) to Col Max (Leftmost).
+      // So moving Left physically means INCREASING colIndex (towards left)
+      targetCol = colIndex + 1;
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      // Moving Right physically means DECREASING colIndex
+      targetCol = colIndex - 1;
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      targetRow = rowIndex + 1;
+      e.preventDefault();
+    } else {
+      return;
+    }
+
+    // Check bounds and focus
+    if (targetRow >= 0 && targetRow < maxRows && targetCol >= 0 && targetCol < maxCols) {
+      const nextInput = document.getElementById(`cell-${targetRow}-${targetCol}`);
+      if (nextInput) {
+        nextInput.focus();
+        (nextInput as HTMLInputElement).select();
+      }
+    }
+  };
+
   const saveClassResults = async () => {
     setSaving(true);
     try {
@@ -571,7 +614,7 @@ export default function Results() {
                     </tr>
                   </thead>
                   <tbody>
-                    {classStudents.map((s) => {
+                    {classStudents.map((s, sIndex) => {
                       const res = classResults[s.id] || { subjects: {}, hifzBreakdown: {} };
                       const subjects = CLASS_DATA[selectedSection as Section]?.find(c => c.name === selectedClass)?.subjects || [];
                       const isHifz = selectedSection === Section.BANIN_HIFZ;
@@ -594,9 +637,10 @@ export default function Results() {
                           <td className="p-4 border font-bold text-gray-800 text-right">{s.name}</td>
                           
                           {isHifz ? (
-                            ['q1', 'q2', 'q3', 'lahja', 'safai', 'adiya'].map(k => (
+                            ['q1', 'q2', 'q3', 'lahja', 'safai', 'adiya'].map((k, kIndex) => (
                               <td key={k} className="p-2 border text-center">
                                 <input 
+                                  id={`cell-${sIndex}-${kIndex}`}
                                   type="number"
                                   value={res.hifzBreakdown?.[k] || ''}
                                   onChange={(e) => {
@@ -609,14 +653,16 @@ export default function Results() {
                                       }
                                     }));
                                   }}
+                                  onKeyDown={(e) => handleCellKeyDown(e, sIndex, kIndex, classStudents.length, 6)}
                                   className="w-14 text-center py-1 border rounded-md focus:ring-2 focus:ring-emerald-500 font-bold"
                                 />
                               </td>
                             ))
                           ) : (
-                            subjects.map(sub => (
+                            subjects.map((sub, subIndex) => (
                               <td key={sub} className="p-1 border text-center">
                                 <input 
+                                  id={`cell-${sIndex}-${subIndex}`}
                                   type="number"
                                   value={res.subjects?.[sub] || ''}
                                   onChange={(e) => {
@@ -629,6 +675,7 @@ export default function Results() {
                                       }
                                     }));
                                   }}
+                                  onKeyDown={(e) => handleCellKeyDown(e, sIndex, subIndex, classStudents.length, subjects.length)}
                                   className="w-12 text-center py-1 border rounded-md focus:ring-2 focus:ring-emerald-500 font-bold text-sm"
                                 />
                               </td>
@@ -656,7 +703,7 @@ export default function Results() {
         </div>
       ) : activeTab === 'report-card' ? (
         <div className="space-y-8">
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
             <div className="space-y-2 text-right">
               <label className="text-sm font-bold text-gray-700">سیکشن</label>
               <select 
@@ -683,16 +730,6 @@ export default function Results() {
               >
                 <option value="">انتخاب کریں</option>
                 {rcSection && CLASS_DATA[rcSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2 text-right">
-              <label className="text-sm font-bold text-gray-700">امتحان</label>
-              <select 
-                value={examType} 
-                onChange={(e) => setExamType(e.target.value as ExamType)}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
-              >
-                {Object.values(ExamType).map(e => <option key={e} value={e}>{e}</option>)}
               </select>
             </div>
             <button
@@ -1010,116 +1047,121 @@ export default function Results() {
                 </div>
               </div>
               
-              <div ref={collectiveRef} className="bg-white p-10 relative overflow-hidden print-area border border-gray-100 shadow-sm mx-auto" style={{ minWidth: '297mm', minHeight: '210mm' }}>
+              <div ref={collectiveRef} className="bg-white pt-4 pb-12 px-10 relative overflow-hidden print-area border border-gray-100 shadow-sm mx-auto" style={{ minWidth: '297mm', minHeight: '210mm' }}>
                 {/* Watermark Logo */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
                   <img src={logo} alt="Watermark" className="w-[500px] h-[500px] object-contain" />
                 </div>
 
                 {/* Header Section */}
-                <div className="relative mb-10">
-                  <div className="flex justify-between items-center bg-emerald-50/50 p-8 rounded-[2.5rem] border-2 border-emerald-900 shadow-sm mb-10">
-                    <div className="text-right space-y-2">
-                      <h2 className="text-3xl font-nastaleeq font-black text-emerald-900 leading-none">
-                        نتیجہ امتحان {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'}
-                      </h2>
-                      <p className="text-sm font-bold text-gray-600">اکیڈمک سیشن 2024-25</p>
-                    </div>
-                    
-                    <div className="text-center space-y-4">
-                      <h1 className="text-5xl font-nastaleeq font-black text-emerald-950 mb-3">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
-                      <div className="px-10 py-2 bg-emerald-800 text-white rounded-full text-sm font-black uppercase tracking-[0.2em] inline-block shadow-lg shadow-emerald-900/40">COLLECTIVE RESULT SHEET</div>
+                <div className="relative mb-3 px-2">
+                  <div className="flex justify-between items-end border-b-2 border-emerald-900 pb-2">
+                    {/* Item 1: Exam Type */}
+                    <div className="flex items-end gap-1.5 pb-0.5">
+                      <span className="text-emerald-900 font-nastaleeq font-bold text-base leading-none">نتیجہ امتحان:</span>
+                      <span className="font-nastaleeq font-black text-xl text-emerald-950 leading-none">
+                        {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'}
+                      </span>
                     </div>
 
-                    <div className="text-left space-y-2">
-                      <p className="text-sm font-bold text-gray-500">تاریخ طباعت: {format(new Date(), 'dd/MM/yyyy')}</p>
-                      <p className="text-xs font-black text-emerald-700 uppercase">OFFICIAL ACADEMIC RECORD</p>
+                    {/* Item 2: Printed Date */}
+                    <div className="flex items-end gap-1 pb-0.5">
+                      <span className="text-emerald-900 font-nastaleeq font-bold text-base leading-none">تاریخ طباعت:</span>
+                      <span className="text-xs font-bold text-gray-700 font-mono leading-none relative -top-[3px]">{format(new Date(), 'dd/MM/yyyy')}</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex gap-16 text-2xl font-nastaleeq font-black text-emerald-900 px-8 mb-6">
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500 font-bold text-base">سیکشن:</span>
-                      <span className="bg-emerald-100/70 px-6 py-2 rounded-2xl border border-emerald-200">{reportSection}</span>
+
+                    {/* Item 3: School Name */}
+                    <div className="pb-0.5">
+                      <h1 className="text-2xl font-nastaleeq font-black text-emerald-955 leading-none">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500 font-bold text-base">درجہ:</span>
-                      <span className="bg-emerald-100/70 px-6 py-2 rounded-2xl border border-emerald-200">{reportClass}</span>
+
+                    {/* Item 4: Section */}
+                    <div className="flex items-end gap-1.5 pb-0.5">
+                      <span className="text-emerald-900 font-nastaleeq font-bold text-base leading-none">سیکشن:</span>
+                      <span className="font-nastaleeq font-black text-xl text-emerald-950 leading-none">{reportSection}</span>
+                    </div>
+
+                    {/* Item 5: Class */}
+                    <div className="flex items-end gap-1.5 pb-0.5">
+                      <span className="text-emerald-900 font-nastaleeq font-bold text-base leading-none">درجہ:</span>
+                      <span className="font-nastaleeq font-black text-xl text-emerald-950 leading-none">{reportClass}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="relative overflow-x-auto">
-                  <table className="w-full text-right border-collapse text-sm border-2 border-emerald-900">
-                  <thead>
-                    <tr className="bg-emerald-900 text-white font-nastaleeq">
-                      <th className="border-r border-emerald-800 p-4 w-40 text-center font-black text-base">رجسٹریشن نمبر</th>
-                      <th className="border-r border-emerald-800 p-4 w-44 text-right font-black text-base">نام طالب علم</th>
-                      <th className="border-r border-emerald-800 p-4 w-48 font-black text-base">ولدیت</th>
-                      {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                        <th key={s} className="border-r border-emerald-800 p-2 text-sm w-24 text-center font-black">{s}</th>
-                      ))}
-                      {reportSection === Section.BANIN_HIFZ && ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map(s => (
-                        <th key={s} className="border-r border-emerald-800 p-4 text-center font-black text-sm">{s}</th>
-                      ))}
-                      <th className="border-r border-emerald-800 p-4 w-24 text-center font-black text-base">مجموعہ</th>
-                      <th className="border-r border-emerald-800 p-4 w-20 text-center font-black text-base">پوزیشن</th>
-                      <th className="border p-4 w-28 text-center font-black text-base">کیفیت</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resultsList.map((res, i) => {
-                      // Calculate position within the current report context
-                      const reportTotals = resultsList.map(r => r.totalMarks).sort((a, b) => b - a);
-                      let rank = 1;
-                      for (let j = 0; j < reportTotals.length; j++) {
-                        if (reportTotals[j] === res.totalMarks) {
-                          rank = j + 1;
-                          // Handle ties
-                          while(j > 0 && reportTotals[j] === reportTotals[j-1]) {
-                            rank--; j--;
+                  <table className="w-full text-right border-collapse text-xs border-2 border-emerald-900">
+                    <thead>
+                      <tr className="bg-emerald-900 text-white font-nastaleeq">
+                        <th className="border-r border-emerald-800 py-3 px-2 w-36 text-center font-black text-sm">رجسٹریشن نمبر</th>
+                        <th className="border-r border-emerald-800 py-3 px-2 w-40 text-right font-black text-sm">نام طالب علم</th>
+                        <th className="border-r border-emerald-800 py-3 px-2 w-44 font-black text-sm">ولدیت</th>
+                        {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
+                          <th key={s} className="border-r border-emerald-800 py-3 px-2 text-xs w-20 text-center font-black">{s}</th>
+                        ))}
+                        {reportSection === Section.BANIN_HIFZ && ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map(s => (
+                          <th key={s} className="border-r border-emerald-800 py-3 px-2 text-center font-black text-xs">{s}</th>
+                        ))}
+                        <th className="border-r border-emerald-800 py-3 px-2 w-20 text-center font-black text-sm">مجموعہ</th>
+                        <th className="border-r border-emerald-800 py-3 px-2 w-16 text-center font-black text-sm">پوزیشن</th>
+                        <th className="border py-3 px-2 w-24 text-center font-black text-sm">کیفیت</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultsList.map((res, i) => {
+                        // Calculate position within the current report context
+                        const reportTotals = resultsList.map(r => r.totalMarks).sort((a, b) => b - a);
+                        let rank = 1;
+                        for (let j = 0; j < reportTotals.length; j++) {
+                          if (reportTotals[j] === res.totalMarks) {
+                            rank = j + 1;
+                            // Handle ties
+                            while(j > 0 && reportTotals[j] === reportTotals[j-1]) {
+                              rank--; j--;
+                            }
+                            break;
                           }
-                          break;
                         }
-                      }
 
-                      return (
+                        return (
                           <tr key={i} className="hover:bg-gray-50 border-b border-emerald-900/10">
-                            <td className="border-r border-emerald-900/20 p-4 font-mono whitespace-nowrap text-center text-sm">{res.regNo}</td>
-                            <td className="border-r border-emerald-900/20 p-4 font-nastaleeq font-black text-right text-lg">{res.studentName}</td>
-                            <td className="border-r border-emerald-900/20 p-4 text-emerald-950 font-nastaleeq text-base font-bold leading-tight">{res.fatherName}</td>
+                            <td className="border-r border-emerald-900/20 py-1.5 px-2 font-mono whitespace-nowrap text-center text-xs">{res.regNo}</td>
+                            <td className="border-r border-emerald-900/20 py-1.5 px-2 font-nastaleeq font-black text-right text-base leading-tight">{res.studentName}</td>
+                            <td className="border-r border-emerald-900/20 py-1.5 px-2 text-emerald-950 font-nastaleeq text-sm font-bold leading-tight">{res.fatherName}</td>
                             {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                              <td key={s} className="border-r border-emerald-900/20 p-4 text-center font-black text-sm">{res.subjects?.[s] || '-'}</td>
+                              <td key={s} className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-xs">{res.subjects?.[s] || '-'}</td>
                             ))}
                             {reportSection === Section.BANIN_HIFZ && (
                               <>
-                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.q1}</td>
-                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.q2}</td>
-                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.q3}</td>
-                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.lahja}</td>
-                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.safai}</td>
-                                <td className="border-r border-emerald-900/20 p-4 text-center text-sm font-bold">{res.hifzBreakdown?.adiya}</td>
+                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q1}</td>
+                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q2}</td>
+                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q3}</td>
+                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.lahja}</td>
+                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.safai}</td>
+                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.adiya}</td>
                               </>
                             )}
-                            <td className="border-r border-emerald-900/20 p-4 text-center font-black text-emerald-800 bg-emerald-50/20 text-base">{res.totalMarks}</td>
-                            <td className="border-r border-emerald-900/20 p-4 text-center font-black text-base">{rank}</td>
-                            <td className="border p-4 text-center font-black text-sm font-nastaleeq">
+                            <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-emerald-800 bg-emerald-50/20 text-sm">{res.totalMarks}</td>
+                            <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-sm">{rank}</td>
+                            <td className="border py-1.5 px-2 text-center font-black text-xs font-nastaleeq leading-tight">
                               {res.grade}
                             </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Footer Signatures for Collective Sheet */}
-                <div className="mt-12 flex justify-between px-16 relative">
-                  <div className="text-center w-64 border-t-2 border-emerald-900 pt-3">
-                    <p className="font-urdu font-black text-xl text-emerald-900">دستخط ناظم</p>
+                <div className="mt-16 flex justify-between px-16 relative pb-8">
+                  <div className="flex items-end gap-2">
+                    <p className="font-nastaleeq font-black text-2xl text-emerald-900 whitespace-nowrap">دستخط ناظم</p>
+                    <div className="w-48 border-b-2 border-emerald-900/30 pb-0.5 mb-2"></div>
                   </div>
-                  <div className="text-center w-64 border-t-2 border-emerald-900 pt-3">
-                    <p className="font-urdu font-black text-xl text-emerald-900">دستخط مہتمم</p>
+                  <div className="flex items-end gap-2">
+                    <p className="font-nastaleeq font-black text-2xl text-emerald-900 whitespace-nowrap">دستخط مہتمم</p>
+                    <div className="w-48 border-b-2 border-emerald-900/30 pb-0.5 mb-2"></div>
                   </div>
                 </div>
               </div>

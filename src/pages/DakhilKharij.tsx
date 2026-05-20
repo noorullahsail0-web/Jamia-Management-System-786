@@ -444,7 +444,7 @@ export default function DakhilKharij() {
                   <span className="text-[10px] font-bold text-gray-600">الحاق نمبر: 06838</span>
                 </div>
                 <div className="text-xl font-nastaleeq font-black text-emerald-950">
-                  سال تعلیمی: 2026
+                  سال تعلیمی: {new Date().getFullYear()}
                 </div>
               </div>
             </div>

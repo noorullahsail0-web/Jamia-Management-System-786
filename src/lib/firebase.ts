@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer, initializeFirestore } from 'firebase/firestore';
+import { doc, getDocFromServer, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -9,10 +9,16 @@ const app = initializeApp(firebaseConfig);
 console.log("Firebase Project ID:", firebaseConfig.projectId);
 console.log("Firestore Database ID:", firebaseConfig.firestoreDatabaseId || '(default)');
 
+// Clean up DB ID so we don't pass "(default)" literally as customized ID
+const dbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
+  ? firebaseConfig.firestoreDatabaseId
+  : undefined;
+
 // Initialize Firestore with settings for better reliability in restricted environments
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId || '(default)');
+  experimentalAutoDetectLongPolling: true,
+  localCache: memoryLocalCache(),
+}, dbId);
 
 export const auth = getAuth(app);
 export const storage = getStorage(app);
@@ -42,8 +48,8 @@ export async function testFirebaseConnection(retries = 3) {
       console.log("Firebase connection established successfully.");
       return true;
     } catch (error: any) {
-      console.warn(`Firestore connection attempt ${i + 1} failed:`, error.message);
-      if (error.message.includes('offline')) {
+      console.warn(`Firestore connection attempt ${i + 1} failed. Code: ${error.code || 'UNKNOWN'}, Message: ${error.message || error}`, error);
+      if (error.message && error.message.includes('offline')) {
         console.error("Firestore client is in offline mode. This often means the backend is unreachable or blocked.");
       }
       if (i < retries) {

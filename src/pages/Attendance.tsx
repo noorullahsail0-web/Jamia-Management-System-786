@@ -218,7 +218,7 @@ export default function Attendance() {
                 {URDU_MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
               </select>
               <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold">
-                {Array.from({ length: 10 }, (_, i) => 2024 + i).map(y => <option key={y} value={y}>{y}</option>)}
+                {Array.from({ length: (new Date().getFullYear() + 100) - 1995 + 1 }, (_, i) => 1995 + i).map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           )}
@@ -317,61 +317,55 @@ export default function Attendance() {
               <div 
                 id="print-area" 
                 ref={printRef} 
-                className="pt-1 px-8 pb-12 min-w-[1100px] bg-white mx-auto shadow-sm border border-gray-100 relative" 
-                style={{ direction: 'rtl', width: '297mm', fontFamily: 'system-ui' }}
+                className="pt-1 px-8 pb-12 min-w-[1100px] bg-white mx-auto relative text-black" 
+                style={{ direction: 'rtl', width: '297mm', minHeight: '210mm' }}
               >
                 {/* Watermark Logo */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none overflow-hidden">
                   <img src={logo} alt="Watermark" className="w-[400px] h-[400px] object-contain" />
                 </div>
 
-                <div className="relative w-full mb-6 border-b-2 border-emerald-900 pb-4">
-                  <div className="flex justify-between items-center bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-                    <div className="text-xl font-nastaleeq font-black text-emerald-900 leading-tight">
-                      جامعہ تعلیم القرآن ناگمان ضلع پشاور
+                {/* Header Section in one single aligned row */}
+                <div className="relative w-full mb-4 border-b-2 border-black pb-2">
+                  <div className="flex justify-between items-end text-black font-nastaleeq">
+                    {/* Far Right: Section name */}
+                    <div className="flex items-end gap-1">
+                      <span className="font-nastaleeq font-black text-xl leading-none">{section}</span>
                     </div>
+
+                    {/* Right-Center: Class name */}
+                    <div className="flex items-end gap-1">
+                      <span className="font-nastaleeq font-black text-xl leading-none">{currentClass}</span>
+                    </div>
+
+                    {/* Middle: Register Title */}
                     <div className="text-center">
-                      <h1 className="text-4xl font-nastaleeq font-black text-black mb-1">حاضری رجسٹر</h1>
-                      <div className="px-8 py-1.5 bg-emerald-600 text-white rounded-full text-sm font-bold shadow-sm inline-block uppercase tracking-wider">Attendance Register</div>
+                      <h1 className="text-2xl font-nastaleeq font-black leading-none">حاضری رجسٹر جامعہ تعلیم القرآن ناگمان</h1>
                     </div>
-                    <div className="text-left space-y-1">
-                      <div className="text-xs font-bold text-gray-400">تاریخ طباعت: {format(new Date(), 'dd/MM/yyyy')}</div>
-                      <div className="text-xs font-bold text-emerald-700">سسٹم جنریٹڈ ریکارڈ</div>
+
+                    {/* Left-Center: Month name */}
+                    <div className="flex items-end gap-1">
+                      <span className="font-nastaleeq font-black text-base leading-none">ماہ:</span>
+                      <span className="font-nastaleeq font-black text-xl leading-none">{URDU_MONTHS[selectedMonth]}</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mt-6 px-4 text-2xl font-nastaleeq font-black text-emerald-900 border-t border-emerald-100 pt-4">
-                    <div className="flex gap-12">
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-400 font-bold text-sm">سیکشن:</span>
-                        <span className="bg-emerald-50 px-4 py-1 rounded-xl border border-emerald-100">{section}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-400 font-bold text-sm">درجہ:</span>
-                        <span className="bg-emerald-50 px-4 py-1 rounded-xl border border-emerald-100">{currentClass}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-400 font-bold text-sm">ماہ:</span>
-                        <span className="bg-emerald-50 px-4 py-1 rounded-xl border border-emerald-100">{URDU_MONTHS[selectedMonth]} {selectedYear}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400 font-bold text-sm">کوڈ:</span>
-                      <span className="font-sans font-black text-emerald-900 text-base">DN{selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}</span>
+
+                    {/* Far Left: Code */}
+                    <div className="flex items-end gap-1.5 font-sans relative -top-[5px]">
+                      <span className="text-xl font-black leading-none">DN{selectedYear}-{String(selectedMonth + 1).padStart(2, '0')}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="w-full">
-                  <table className="w-full border-collapse" style={{ border: '1.5px solid #064e3b' }}>
+                  <table className="w-full border-collapse" style={{ border: '2px solid #000000' }}>
                     <thead>
-                      <tr className="bg-emerald-900 text-white h-14 font-nastaleeq">
-                        <th className="border border-emerald-900 p-2 w-12 text-center text-base font-black">ن-ش</th>
-                        <th className="border border-emerald-900 p-2 w-64 text-right pr-4 text-base font-black">نام طالب علم</th>
+                      <tr className="bg-white text-black h-12 font-nastaleeq border-b-2 border-black">
+                        <th className="border border-black p-1 w-12 text-center text-sm font-bold">نمبر</th>
+                        <th className="border border-black p-1 w-52 text-center text-sm font-bold">نام</th>
                         {eachDayOfInterval({ start: startOfMonth(new Date(selectedYear, selectedMonth)), end: endOfMonth(new Date(selectedYear, selectedMonth)) }).map(d => (
-                          <th key={d.toString()} className="border border-emerald-900 p-0 text-[10px] w-7 text-center font-bold font-sans">{format(d, 'd')}</th>
+                          <th key={d.toString()} className="border border-black p-0 text-xs w-7 text-center font-bold font-sans">{format(d, 'd')}</th>
                         ))}
-                        <th className="border border-emerald-900 p-1 w-12 text-center text-sm font-black">کل</th>
+                        <th className="border border-black p-1 w-16 text-center text-xs font-bold leading-tight">کل حاضری</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -379,31 +373,41 @@ export default function Attendance() {
                          const days = eachDayOfInterval({ start: startOfMonth(new Date(selectedYear, selectedMonth)), end: endOfMonth(new Date(selectedYear, selectedMonth)) });
                          let presentCount = 0;
                          return (
-                           <tr key={index} className="h-9 transition-colors even:bg-gray-50/50">
-                             <td className="border border-emerald-900 text-center text-xs font-bold">{index + 1}</td>
-                             <td className="border border-emerald-900 pr-4 text-xl font-nastaleeq font-black text-gray-950 truncate">{student.name}</td>
+                           <tr key={index} className="h-10 text-black">
+                             <td className="border border-black text-center text-sm font-bold">{index + 1}</td>
+                             <td className="border border-black text-center text-base font-nastaleeq font-black text-black truncate leading-tight" style={{ color: '#000000' }}>{student.name}</td>
                              {days.map(day => {
                                const record = monthlyData.find(r => r.studentId === student.id && r.date === format(day, 'yyyy-MM-dd'));
                                if (record?.status === 'present') presentCount++;
                                return (
-                                 <td key={day.toString()} className="border border-emerald-900 text-center p-0 h-9">
-                                   <div className="w-full h-full flex items-center justify-center text-[13px] font-black">
+                                 <td key={day.toString()} className="border border-black text-center p-0 h-10">
+                                   <div className="w-full h-full flex items-center justify-center text-xs font-bold">
                                      {record?.status === 'present' ? '✓' : record?.status === 'absent' ? 'x' : record?.status === 'leave' ? 'ر' : ''}
                                    </div>
                                  </td>
                                );
                              })}
-                             <td className="border border-emerald-900 text-center font-black text-xs bg-emerald-50 text-emerald-900">{presentCount}</td>
+                             <td className="border border-black text-center font-bold text-xs bg-white text-black">{presentCount}</td>
                            </tr>
                          );
                       })}
                     </tbody>
                   </table>
                   
-                  <div className="mt-12 flex justify-between px-10 text-2xl font-nastaleeq font-black text-emerald-900 border-t-2 border-emerald-900 pt-6">
-                    <p>دستخط استاد جی</p>
-                    <p>دستخط ناظم</p>
-                    <p>مہر جامعہ</p>
+                  {/* Signature Section matching the result and register look */}
+                  <div className="mt-16 flex justify-between items-end px-12 text-xl font-nastaleeq font-black text-black">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="w-48 border-b-2 border-black h-8 pb-1"></div>
+                      <p>دستخط مہتمم</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-[200px] justify-center">
+                      <div className="w-40 border-b-2 border-black h-8 pb-1"></div>
+                      <p>مہر جامعہ</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="w-48 border-b-2 border-black h-8 pb-1"></div>
+                      <p>دستخط ناظم</p>
+                    </div>
                   </div>
                 </div>
               </div>

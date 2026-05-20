@@ -85,7 +85,7 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
           <div className="flex justify-between items-center mb-10">
             <h3 className="text-2xl font-black text-gray-900">تعلیمی گراف</h3>
             <div className="flex gap-2">
-               <span className="px-4 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">سالانہ 2024</span>
+               <span className="px-4 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">سالانہ {new Date().getFullYear()}</span>
             </div>
           </div>
           <div className="h-64 flex items-end justify-between gap-4 px-4 overflow-hidden">
