@@ -28,6 +28,7 @@ export interface Student {
   leavingDate?: string;
   leavingReason?: string;
   leavingClass?: string;
+  grade?: string;
   createdAt: string;
 }
 

@@ -39,6 +39,12 @@ export default function DakhilKharij() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState<Section | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'active' | 'left'>('all');
+  const currentYear = new Date().getFullYear();
+  const academicYears = Array.from({ length: 2126 - 1995 + 1 }, (_, i) => {
+    const y = 1995 + i;
+    return y.toString();
+  });
+  const [selectedYear, setSelectedYear] = useState<string | 'all'>('all');
   const printRef = useRef<HTMLDivElement>(null);
   
   // Withdrawal Modal State
@@ -150,7 +156,13 @@ export default function DakhilKharij() {
     const matchesSearch = name.includes(search) || regNo.includes(search) || fatherName.includes(search);
     const matchesSection = selectedSection === 'all' || s.section === selectedSection;
     const matchesStatus = selectedStatus === 'all' || s.status === selectedStatus;
-    return matchesSearch && matchesSection && matchesStatus;
+    
+    // Extract Student Year
+    const match = s.regNo?.match(/\d{4}/);
+    const studentYear = s.admissionDate ? s.admissionDate.split('-')[0] : (match ? match[0] : (s.createdAt ? s.createdAt.split('-')[0] : ''));
+    const matchesYear = selectedYear === 'all' || studentYear === selectedYear;
+
+    return matchesSearch && matchesSection && matchesStatus && matchesYear;
   });
 
   const downloadPDF = async () => {
@@ -331,6 +343,16 @@ export default function DakhilKharij() {
             <option value="left">صرف خارج شدہ طلباء</option>
           </select>
         </div>
+        <div className="min-w-[170px]">
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
+          >
+            <option value="all">تمام تعلیمی سال</option>
+            {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
         <div className="flex items-center px-8 bg-emerald-700 text-white rounded-2xl font-black text-base shadow-lg shadow-emerald-900/10">
           کل طلبہ: {filteredStudents.length}
         </div>
@@ -444,7 +466,7 @@ export default function DakhilKharij() {
                   <span className="text-[10px] font-bold text-gray-600">الحاق نمبر: 06838</span>
                 </div>
                 <div className="text-xl font-nastaleeq font-black text-emerald-950">
-                  سال تعلیمی: {new Date().getFullYear()}
+                  سال تعلیمی: {selectedYear === 'all' ? new Date().getFullYear() : selectedYear}
                 </div>
               </div>
             </div>

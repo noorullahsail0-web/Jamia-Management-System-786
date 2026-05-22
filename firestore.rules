@@ -11,11 +11,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Enforce email equivalence + strict verification factor to prevent spoofing
+    // Enforce email equivalence to prevent spoofing
     function isAdmin() {
       return isSignedIn() &&
-        request.auth.token.email_verified == true &&
-        request.auth.token.email == 'noorullahsail0@gmail.com';
+        'email' in request.auth.token &&
+        request.auth.token.email.lower() == 'noorullahsail0@gmail.com';
     }
 
     // Path Variable & ID Poisoning Guard
@@ -44,18 +44,19 @@ service cloud.firestore {
         && data.phone is string && data.phone.size() <= 50
         && data.section in ['بنین درس نظامی', 'بنات درس نظامی', 'بنین درجہ حفظ']
         && data.currentClass is string && data.currentClass.size() <= 150
-        && (!('dob' in data) || (data.dob is string && data.dob.size() <= 50))
-        && (!('cnic' in data) || (data.cnic is string && data.cnic.size() <= 50))
-        && (!('address' in data) || (data.address is string && data.address.size() <= 1000))
-        && (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 2000))
-        && (!('status' in data) || (data.status in ['active', 'left', 'graduated']))
-        && (!('isResident' in data) || (data.isResident is bool))
-        && (!('admissionDate' in data) || (data.admissionDate is string && data.admissionDate.size() <= 50))
-        && (!('leavingDate' in data) || (data.leavingDate is string && data.leavingDate.size() <= 50))
-        && (!('leavingReason' in data) || (data.leavingReason is string && data.leavingReason.size() <= 500))
-        && (!('leavingClass' in data) || (data.leavingClass is string && data.leavingClass.size() <= 150))
-        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 100))
-        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 100));
+        && (!data.keys().hasAll(['dob']) || (data.dob is string && data.dob.size() <= 50))
+        && (!data.keys().hasAll(['cnic']) || (data.cnic is string && data.cnic.size() <= 50))
+        && (!data.keys().hasAll(['address']) || (data.address is string && data.address.size() <= 1000))
+        && (!data.keys().hasAll(['photoUrl']) || (data.photoUrl is string && data.photoUrl.size() <= 2000))
+        && (!data.keys().hasAll(['status']) || (data.status in ['active', 'left', 'graduated']))
+        && (!data.keys().hasAll(['isResident']) || (data.isResident is bool))
+        && (!data.keys().hasAll(['admissionDate']) || (data.admissionDate is string && data.admissionDate.size() <= 50))
+        && (!data.keys().hasAll(['leavingDate']) || (data.leavingDate is string && data.leavingDate.size() <= 50))
+        && (!data.keys().hasAll(['leavingReason']) || (data.leavingReason is string && data.leavingReason.size() <= 500))
+        && (!data.keys().hasAll(['leavingClass']) || (data.leavingClass is string && data.leavingClass.size() <= 150))
+        && (!data.keys().hasAll(['grade']) || (data.grade is string && data.grade.size() <= 50))
+        && (!data.keys().hasAll(['createdAt']) || (data.createdAt is string && data.createdAt.size() <= 100))
+        && (!data.keys().hasAll(['updatedAt']) || (data.updatedAt is string && data.updatedAt.size() <= 100));
     }
 
     match /students/{studentId} {
@@ -63,7 +64,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create: if isAdmin() && isValidId(studentId) && isValidStudent(incoming());
       allow update: if isAdmin() && isValidId(studentId) && isValidStudent(incoming()) && (
-        (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt)
+        (!existing().keys().hasAll(['createdAt']) || incoming().createdAt == existing().createdAt)
       );
       allow delete: if isAdmin() && isValidId(studentId);
     }
@@ -73,9 +74,9 @@ service cloud.firestore {
       return data.studentId is string && data.studentId.size() <= 128
         && data.date is string && data.date.size() <= 50
         && data.status in ['present', 'absent', 'leave']
-        && (!('section' in data) || (data.section is string && data.section.size() <= 150))
-        && (!('class' in data) || (data.class is string && data.class.size() <= 150))
-        && (!('createdAt' in data) || data.createdAt == request.time);
+        && (!data.keys().hasAll(['section']) || (data.section is string && data.section.size() <= 150))
+        && (!data.keys().hasAll(['class']) || (data.class is string && data.class.size() <= 150))
+        && (!data.keys().hasAll(['createdAt']) || data.createdAt == request.time);
     }
 
     match /attendance/{attendanceId} {
@@ -92,13 +93,14 @@ service cloud.firestore {
       return data.studentId is string && data.studentId.size() <= 128
         && data.examType in ['امتحان سہ ماہی', 'امتحان شش ماہی', 'امتحان سالانہ', 'سہ ماہی', 'شش ماہی', 'سالانہ']
         && data.year is string && data.year.size() <= 10
-        && (!('class' in data) || (data.class is string && data.class.size() <= 150))
-        && (!('subjects' in data) || data.subjects is map)
-        && (!('hifzBreakdown' in data) || (data.hifzBreakdown == null || data.hifzBreakdown is map))
-        && (!('totalMarks' in data) || data.totalMarks is number)
-        && (!('percentage' in data) || data.percentage is number)
-        && (!('grade' in data) || (data.grade is string && data.grade.size() <= 50))
-        && (!('updatedAt' in data) || data.updatedAt == request.time);
+        && (!data.keys().hasAll(['class']) || (data.class is string && data.class.size() <= 150))
+        && (!data.keys().hasAll(['regNo']) || (data.regNo is string && data.regNo.size() <= 100))
+        && (!data.keys().hasAll(['subjects']) || data.subjects is map)
+        && (!data.keys().hasAll(['hifzBreakdown']) || (data.hifzBreakdown == null || data.hifzBreakdown is map))
+        && (!data.keys().hasAll(['totalMarks']) || data.totalMarks is number)
+        && (!data.keys().hasAll(['percentage']) || data.percentage is number)
+        && (!data.keys().hasAll(['grade']) || (data.grade is string && data.grade.size() <= 50))
+        && (!data.keys().hasAll(['updatedAt']) || data.updatedAt == request.time);
     }
 
     match /results/{resultId} {

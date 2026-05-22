@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400..700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @font-face {
@@ -123,6 +123,11 @@
 .font-urdu {
   font-family: var(--urdu-font);
   line-height: 2.4;
+}
+
+.font-arabic {
+  font-family: "Amiri", serif;
+  line-height: 1.8;
 }
 
 .font-nastaleeq {

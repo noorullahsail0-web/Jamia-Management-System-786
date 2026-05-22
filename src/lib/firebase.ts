@@ -16,7 +16,7 @@ const dbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatab
 
 // Initialize Firestore with settings for better reliability in restricted environments
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
   localCache: memoryLocalCache(),
 }, dbId);
 

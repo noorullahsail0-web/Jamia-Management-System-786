@@ -145,9 +145,11 @@ export default function Admission() {
         } else {
           updates.currentClass = promoTargetClass;
           if (promoRegenerateReg) {
+            const match = student.regNo?.match(/\d{4}/);
+            const studentYear = student.admissionDate ? student.admissionDate.split('-')[0] : (match ? match[0] : year);
             const classCodeStr = targetCode.toString().padStart(2, '0');
             const serialStr = currentSerial.toString().padStart(2, '0');
-            updates.regNo = `${prefix}${year}-${classCodeStr}-${serialStr}`;
+            updates.regNo = `${prefix}${studentYear}-${classCodeStr}-${serialStr}`;
             currentSerial++;
           }
         }
@@ -202,9 +204,9 @@ export default function Admission() {
     }
   };
 
-  const generateRegNo = async (section: Section, classCode: string) => {
+  const generateRegNo = async (section: Section, classCode: string, admissionDateStr?: string) => {
     const prefix = SECTION_PREFIXES[section];
-    const year = currentYear.toString();
+    const year = admissionDateStr ? admissionDateStr.split('-')[0] : currentYear.toString();
     
     // Find last student in this section and class to get serial
     const q = query(
@@ -252,7 +254,7 @@ export default function Admission() {
         alert('طالب علم کا ریکارڈ اپڈیٹ کر دیا گیا۔');
       } else {
         const classObj = CLASS_DATA[selectedSection].find(c => c.name === data.currentClass);
-        const regNo = await generateRegNo(data.section as Section, classObj?.code || '00');
+        const regNo = await generateRegNo(data.section as Section, classObj?.code || '00', data.admissionDate);
         
         setUploadingInfo('ڈیٹا محفوظ ہو رہا ہے...');
         await addDoc(collection(db, 'students'), {
@@ -840,7 +842,9 @@ export default function Admission() {
                                 const targetCode = classObj?.code || '00';
                                 const prefix = SECTION_PREFIXES[promoSection as Section] || 'DN';
                                 const year = new Date().getFullYear().toString();
-                                newRegPreview = `${prefix}${year}-${targetCode.padStart(2, '0')}-${String(index + 1).padStart(2, '0')} (تقریباً)`;
+                                const match = s.regNo?.match(/\d{4}/);
+                                const studentYear = s.admissionDate ? s.admissionDate.split('-')[0] : (match ? match[0] : year);
+                                newRegPreview = `${prefix}${studentYear}-${targetCode.padStart(2, '0')}-${String(index + 1).padStart(2, '0')} (تقریباً)`;
                               }
                             } else {
                               newRegPreview = 'تکمیل / فارغ التحصیل';

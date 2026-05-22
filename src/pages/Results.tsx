@@ -13,6 +13,12 @@ import { format } from 'date-fns';
 import logo from '../assets/logo.png';
 
 export default function Results() {
+  const currentYear = new Date().getFullYear();
+  const academicYears = Array.from({ length: 2126 - 1995 + 1 }, (_, i) => {
+    const y = 1995 + i;
+    return y.toString();
+  });
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [activeTab, setActiveTab] = useState<'report-card' | 'reports' | 'class-entry'>('class-entry');
   const [regNoSearch, setRegNoSearch] = useState('');
   const [student, setStudent] = useState<Student | null>(null);
@@ -53,7 +59,7 @@ export default function Results() {
         
         // If in report-card tab, fetch all results
         if (activeTab === 'report-card') {
-          const fullResults = await fetchFullStudentResults(studentData.id);
+          const fullResults = await fetchFullStudentResults(studentData.id, selectedYear);
           setStudentAllResults(fullResults);
         } else {
           // Fetch existing result for specific exam type
@@ -107,7 +113,8 @@ export default function Results() {
       const rq = query(
         collection(db, 'results'),
         where('class', '==', selectedClass),
-        where('examType', '==', examType)
+        where('examType', '==', examType),
+        where('year', '==', selectedYear)
       );
       const rSnap = await getDocs(rq);
       const resultsMap: Record<string, any> = {};
@@ -210,7 +217,7 @@ export default function Results() {
           studentId: student.id,
           regNo: student.regNo,
           examType,
-          year: new Date().getFullYear().toString(),
+          year: selectedYear,
           class: selectedClass,
           subjects: studentResult.subjects || {},
           hifzBreakdown: isHifz ? studentResult.hifzBreakdown : null,
@@ -223,7 +230,8 @@ export default function Results() {
         const q = query(
           collection(db, 'results'),
           where('studentId', '==', student.id),
-          where('examType', '==', examType)
+          where('examType', '==', examType),
+          where('year', '==', selectedYear)
         );
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
@@ -277,7 +285,8 @@ export default function Results() {
       const q = query(
         collection(db, 'results'),
         where('class', '==', reportClass),
-        where('examType', '==', examType)
+        where('examType', '==', examType),
+        where('year', '==', selectedYear)
       );
       const snapshot = await getDocs(q);
       const results = snapshot.docs.map(doc => doc.data());
@@ -334,10 +343,14 @@ export default function Results() {
     }
   };
 
-  const fetchFullStudentResults = async (studentId: string) => {
+  const fetchFullStudentResults = async (studentId: string, yearStr: string) => {
     setLoading(true);
     try {
-      const q = query(collection(db, 'results'), where('studentId', '==', studentId));
+      const q = query(
+        collection(db, 'results'),
+        where('studentId', '==', studentId),
+        where('year', '==', yearStr)
+      );
       const snapshot = await getDocs(q);
       const results: Record<string, any> = {};
       snapshot.forEach(doc => {
@@ -527,7 +540,7 @@ export default function Results() {
       {activeTab === 'class-entry' ? (
         <div className="space-y-8">
           {/* Selection Card */}
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-8 items-end">
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 grid grid-cols-1 lg:grid-cols-5 gap-6 items-end">
             <div className="space-y-3 text-right">
               <label className="text-sm font-black text-emerald-900 pr-2">سیکشن کا انتخاب</label>
               <select 
@@ -553,6 +566,19 @@ export default function Results() {
               >
                 <option value="">انتخاب کریں</option>
                 {selectedSection && CLASS_DATA[selectedSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-3 text-right">
+              <label className="text-sm font-black text-emerald-900 pr-2">تعلیمی سال</label>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setClassStudents([]);
+                }}
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
+              >
+                {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div className="space-y-3 text-right">
@@ -703,7 +729,7 @@ export default function Results() {
         </div>
       ) : activeTab === 'report-card' ? (
         <div className="space-y-8">
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
             <div className="space-y-2 text-right">
               <label className="text-sm font-bold text-gray-700">سیکشن</label>
               <select 
@@ -714,7 +740,7 @@ export default function Results() {
                   setRcStudents([]);
                   setStudent(null);
                 }}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold"
               >
                 <option value="">انتخاب کریں</option>
                 {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
@@ -726,10 +752,24 @@ export default function Results() {
                 value={rcClass} 
                 onChange={(e) => setRcClass(e.target.value)}
                 disabled={!rcSection}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold"
               >
                 <option value="">انتخاب کریں</option>
                 {rcSection && CLASS_DATA[rcSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2 text-right">
+              <label className="text-sm font-bold text-gray-700">تعلیمی سال</label>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setStudent(null);
+                  setRcStudents([]);
+                }}
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold"
+              >
+                {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <button
@@ -772,7 +812,7 @@ export default function Results() {
                             onClick={async () => {
                               setLoading(true);
                               setStudent(s as Student);
-                              const fullResults = await fetchFullStudentResults(s.id);
+                              const fullResults = await fetchFullStudentResults(s.id, selectedYear);
                               setStudentAllResults(fullResults);
                               setLoading(false);
                             }}
@@ -837,8 +877,8 @@ export default function Results() {
                 {/* Header */}
                 <div className="relative text-center mb-1 pt-1">
                   <div className="flex flex-col items-center gap-1">
-                    <h1 className="text-3xl font-black text-emerald-950">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
-                    <p className="text-xl font-bold font-nastaleeq text-black leading-tight">سالانہ تعلیمی رپورٹ</p>
+                    <h1 className="text-3xl font-black text-emerald-955">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                    <p className="text-xl font-bold font-nastaleeq text-black leading-tight">سالانہ تعلیمی رپورٹ - {selectedYear}ء</p>
                   </div>
                 </div>
 
@@ -859,7 +899,9 @@ export default function Results() {
                   <div className="flex gap-2 items-end">
                     <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">درجہ:</span>
                     <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
-                      <span className="font-black text-xl text-emerald-900 leading-none inline-block whitespace-nowrap">{student.currentClass} ({student.section})</span>
+                      <span className="font-black text-xl text-emerald-900 leading-none inline-block whitespace-nowrap">
+                        {studentAllResults[ExamType.ANNUAL]?.class || studentAllResults[ExamType.HALF_YEARLY]?.class || studentAllResults[ExamType.QUARTERLY]?.class || student.currentClass} ({student.section})
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-2 items-end">
@@ -973,13 +1015,13 @@ export default function Results() {
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
             <div className="space-y-2 text-right">
               <label className="text-sm font-bold text-gray-700">سیکشن</label>
               <select 
                 value={reportSection} 
                 onChange={(e) => setReportSection(e.target.value as Section)}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold"
               >
                 <option value="">انتخاب کریں</option>
                 {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
@@ -991,10 +1033,23 @@ export default function Results() {
                 value={reportClass} 
                 onChange={(e) => setReportClass(e.target.value)}
                 disabled={!reportSection}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold"
               >
                 <option value="">انتخاب کریں</option>
                 {reportSection && CLASS_DATA[reportSection as Section].map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2 text-right">
+              <label className="text-sm font-bold text-gray-700">تعلیمی سال</label>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setResultsList([]);
+                }}
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold"
+              >
+                {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div className="space-y-2 text-right">
@@ -1002,7 +1057,7 @@ export default function Results() {
               <select 
                 value={examType} 
                 onChange={(e) => setExamType(e.target.value as ExamType)}
-                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold"
               >
                 {Object.values(ExamType).map(e => <option key={e} value={e}>{e}</option>)}
               </select>
@@ -1025,7 +1080,7 @@ export default function Results() {
             >
               <div className="p-8 border-b bg-gray-50 flex justify-between items-center print:bg-white flex-wrap gap-4">
                 <div className="flex-1 text-center min-w-[300px]">
-                  <h2 className="text-2xl font-bold">نتیجہ {examType} جامعہ تعلیم القرآن پشاور</h2>
+                  <h2 className="text-2xl font-bold">نتیجہ {examType} ({selectedYear}ء) جامعہ تعلیم القرآن پشاور</h2>
                   <p className="text-emerald-700 font-bold mt-1">(سیکشن {reportSection} درجہ {reportClass})</p>
                 </div>
                 <div className="flex gap-3 no-print">
@@ -1060,7 +1115,7 @@ export default function Results() {
                     <div className="flex items-end gap-1.5 pb-0.5">
                       <span className="text-emerald-900 font-nastaleeq font-bold text-base leading-none">نتیجہ امتحان:</span>
                       <span className="font-nastaleeq font-black text-xl text-emerald-950 leading-none">
-                        {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'}
+                        {examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ'} ({selectedYear}ء)
                       </span>
                     </div>
 

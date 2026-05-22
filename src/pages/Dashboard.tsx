@@ -6,6 +6,109 @@ import { Section } from '../types';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
+const QURAN_VERSES = [
+  {
+    arabic: "« يَرْفَعِ اللّٰهُ الَّذِیْنَ اٰمَنُوْا مِنْكُمْ ۙ وَالَّذِیْنَ اُوْتُوا الْعِلْمَ دَرَجٰتٍ »",
+    translation: "اللہ تم میں سے ایمان والوں کے اور ان کے جنہیں علم دیا گیا ہے درجات بلند فرمائے گا۔",
+    reference: "سورہ المجادلہ: 11"
+  },
+  {
+    arabic: "« وَقُلْ رَّبِّ زِدْنِیْ عِلْمًا »",
+    translation: "اور کہو: اے میرے رب! میرے علم میں اضافہ فرما۔",
+    reference: "سورہ طہ: 114"
+  },
+  {
+    arabic: "« هَلْ يَسْتَوِی الَّذِیْنَ يَعْلَمُوْنَ وَالَّذِیْنَ لَا يَعْلَمُوْنَ »",
+    translation: "کہہ دیجئے: کیا برابر ہو سکتے ہیں وہ لوگ جو جانتے ہیں اور وہ جو نہیں جانتے؟",
+    reference: "سورہ الزمر: 9"
+  },
+  {
+    arabic: "« إِنَّمَا يَخْشَى اللَّهَ مِنْ عِبَادِهِ الْعُلَمَاءُ »",
+    translation: "اللہ کے بندوں میں سے اس سے صرف وہی ڈرتے ہیں جو علم والے ہیں۔",
+    reference: "سورہ فاطر: 28"
+  },
+  {
+    arabic: "« اِقْرَاْ بِاسْمِ رَبِّكَ الَّذِیْ خَلَقَ »",
+    translation: "پڑھیے اپنے رب کے نام کے ساتھ جس نے سب کچھ پیدا کیا۔",
+    reference: "سورہ العلق: 1"
+  },
+  {
+    arabic: "« الرَّحْمَٰنُ ۙ عَلَّمَ الْقُرْآنَ ۙ خَلَقَ الْإِنسَانَ ۙ عَلَّمَهُ الْبَيَانَ »",
+    translation: "رحمٰن نے قرآن سکھایا، انسان کو پیدا کیا، اسے بولنا سکھایا۔",
+    reference: "سورہ الرحمن: 1-4"
+  },
+  {
+    arabic: "« كِتَابٌ أَنزَلْنَاهُ إِلَيْكَ مُبَارَكٌ لِّيَدَّبَّرُوا آيَاتِهِ وَلِيَتَذَكَّرَ أُولُو الْأَلْبَابِ »",
+    translation: "یہ ایک بابرکت کتاب ہے جو ہم نے آپ کی طرف نازل کی ہے تاکہ وہ اس کی آیتوں میں غور و فکر کریں اور عقل والے نصیحت حاصل کریں۔",
+    reference: "سورہ ص: 29"
+  },
+  {
+    arabic: "« ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ »",
+    translation: "یہ وہ کتاب ہے جس میں کوئی شک نہیں، پرہیزگاروں کے لیے سراسر رہنمائی ہے۔",
+    reference: "سورہ البقرہ: 2"
+  },
+  {
+    arabic: "« وَمَن يُؤْتَ الْحِكْمَةَ فَقَدْ أُوتِيَ خَيْرًا كَثِيرًا »",
+    translation: "اور جسے حکمت عطا کی گئی، اسے حقیقت میں بڑی خیر و برکت مل گئی۔",
+    reference: "سورہ البقرہ: 269"
+  },
+  {
+    arabic: "« إِنَّ هَٰذَا الْقُرْآنَ يَهْدِي لِلَّتِي هِيَ أَقْوَمُ »",
+    translation: "بے شک یہ قرآن اس راستے کی رہنمائی کرتا ہے جو سب سے زیادہ سیدھا ہے۔",
+    reference: "سورہ الاسراء: 9"
+  },
+  {
+    arabic: "« وَنُنَزِّلُ مِنَ الْقُرْآنِ مَا هُوَ شِفَاءٌ وَرَحْمَةٌ لِّلْمُؤْمِنِينَ »",
+    translation: "اور ہم قرآن میں سے وہ چیز نازل کرتے ہیں جو ایمان والوں کے لیے شفا اور رحمت ہے۔",
+    reference: "سورہ الاسراء: 82"
+  },
+  {
+    arabic: "« رَبَّنَا تَقَبَّلْ مِنَّا ۖ إِنَّكَ أَنتَ السَّمِيعُ الْعَلِيمُ »",
+    translation: "اے ہمارے رب! ہم سے قبول فرما، بے شک تو ہی سب کچھ سننے والا، سب کچھ جاننے والا ہے۔",
+    reference: "سورہ البقرہ: 127"
+  },
+  {
+    arabic: "« وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّتَقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ »",
+    translation: "اور نیکی اور پرہیزگاری میں ایک دوسرے کی مدد کرو اور گناہ اور زیادتی میں ایک دوسرے کا ساتھ نہ دو۔",
+    reference: "سورہ المائدہ: 2"
+  },
+  {
+    arabic: "« إِنَّ اللَّهَ يَأْمُرُ بِالْعَدْلِ وَالْإِحْسَانِ »",
+    translation: "بے شک اللہ عدل اور تمام اچھے کاموں (احسان) کا حکم دیتا ہے۔",
+    reference: "سورہ النحل: 90"
+  },
+  {
+    arabic: "« وَأَن لَّيْسَ لِلْإِنسَانِ إِلَّا مَا سَعَىٰ »",
+    translation: "اور یہ کہ انسان کو وہی کچھ ملتا ہے جس کے لیے وہ کوشش کرتا ہے۔",
+    reference: "سورہ النجم: 39"
+  },
+  {
+    arabic: "« فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى اللَّهِ ۚ إِنَّ اللَّهِ يُحِبُّ الْمُتَوَكِّلِينَ »",
+    translation: "پھر جب آپ پختہ ارادہ کر لیں تو اللہ پر بھروسہ رکھیں، یقیناً اللہ بھروسہ رکھنے والوں سے محبت کرتا ہے۔",
+    reference: "سورہ آل عمران: 159"
+  },
+  {
+    arabic: "« ادْعُ إِلَىٰ سَبِيلِ رَبِّكَ بِالْحِكْمَةِ وَالْمَوْعِظَةِ الْحَسَنَةِ »",
+    translation: "اپنے رب کے راستے کی طرف متانت، حکمت اور بہترین نصیحت کے ساتھ دعوت دیجئے۔",
+    reference: "سورہ النحل: 125"
+  },
+  {
+    arabic: "« فَإِنَّ مَعَ الْعُسْرِ يُسْرًا ۙ إِنَّ مَعَ الْعُسْرِ يُسْرًا »",
+    translation: "پس یقیناً تنگی کے ساتھ آسانی بھی ہے، بے شک تنگی کے ساتھ آسانی ہے۔",
+    reference: "سورہ الشرح: 5-6"
+  },
+  {
+    arabic: "« قُلْ هَلْ نُنَبِّئُكُم بِالْأَخْسَرِينَ أَعْمَالًا الَّذِينَ ضَلَّ سَعْيُهُمْ فِي الْحَيَاةِ الدُّنْيَا وَهُمْ يَحْسَبُونَ أَنَّهُمْ يُحْسِنُونَ صُنْعًا »",
+    translation: "آپ کہیے: کیا ہم تمہیں بتائیں کہ اعمال کے اعتبار سے سب سے زیادہ خسارے میں کون لوگ ہیں؟ وہ جن کی کوششیں دنیاوی زندگی میں گم ہو گئیں اور وہ یہ گمان کرتے رہے کہ وہ اچھے کام کر رہے ہیں۔",
+    reference: "سورہ الکہف: 103-104"
+  },
+  {
+    arabic: "« وَأَقِيمُوا الصَّلَاةَ وَآتُوا الزَّكَاةَ ۚ وَمَا تُقَدِّمُوا لِأَنفُسِكُم مِّنْ خَيْرٍ تَجِدُوهُ عِندَ اللَّهِ »",
+    translation: "اور نماز قائم کرو اور زکوٰۃ ادا کرو، اور جو نیکی بھی تم اپنے لیے آگے بھیجو گے، اسے اللہ کے پاس پا لو گے۔",
+    reference: "سورہ البقرہ: 110"
+  }
+];
+
 export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) => void }) {
   const [stats, setStats] = useState({
     total: 0,
@@ -14,6 +117,18 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
     hifz: 0
   });
   const [loading, setLoading] = useState(true);
+
+  const getDailyVerse = () => {
+    const today = new Date();
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const diffInMs = today.getTime() - startOfYear.getTime();
+    const dayOfYear = Math.floor(diffInMs / (1000 * 60 * 60 * 24)) + 1;
+    
+    const index = (dayOfYear + today.getFullYear()) % QURAN_VERSES.length;
+    return QURAN_VERSES[index];
+  };
+
+  const dailyVerse = getDailyVerse();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -126,15 +241,21 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-amber-500/5 via-yellow-500/5 to-amber-600/5 border border-amber-500/10 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6"
       >
-        <div className="flex items-center gap-4 text-amber-800">
-          <div className="p-3 bg-amber-500/10 rounded-2xl flex items-center justify-center">
+        <div className="flex items-center gap-4 text-amber-800 w-full">
+          <div className="p-3 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0">
             <BookOpenCheck className="w-6 h-6" />
           </div>
-          <p className="font-bold text-sm md:text-base text-amber-900 leading-relaxed font-urdu">
-            « يَرْفَعِ اللّٰهُ الَّذِیْنَ اٰمَنُوْا مِنْكُمْ ۙ وَالَّذِیْنَ اُوْتُوا الْعِلْمَ دَرَجٰتٍ » - علم حاصل کرنا ہر مسلمان پر فرض ہے۔
-          </p>
+          <div className="text-right space-y-1">
+            <span className="inline-block px-2.5 py-0.5 bg-amber-500/15 text-amber-800 rounded-md text-[10px] font-black tracking-wider uppercase mb-1">آج کی قرآنی آیت</span>
+            <p className="font-medium text-xl md:text-2xl text-amber-950 leading-relaxed font-arabic block" dir="rtl">
+              {dailyVerse.arabic}
+            </p>
+            <p className="font-bold text-sm md:text-base text-amber-900 leading-relaxed font-urdu">
+              {dailyVerse.translation} <span className="text-xs text-amber-700 font-bold font-sans mr-2">({dailyVerse.reference})</span>
+            </p>
+          </div>
         </div>
-        <div className="flex gap-1 text-amber-500">
+        <div className="flex gap-1 text-amber-500 shrink-0">
           {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
         </div>
       </motion.div>

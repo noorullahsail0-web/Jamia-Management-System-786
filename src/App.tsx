@@ -90,6 +90,8 @@ export default function App() {
     );
   }
 
+  const isAdminEmail = user && user.email && user.email.toLowerCase().trim() === 'noorullahsail0@gmail.com';
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -109,6 +111,40 @@ export default function App() {
           >
             Google کے ساتھ لاگ ان کریں
           </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (user && !isAdminEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4" dir="rtl">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-red-100 text-center relative overflow-hidden"
+        >
+          <div className="absolute inset-x-0 top-0 h-1.5 bg-red-650" />
+          <div className="mb-6">
+            <img src={logo} alt="Logo" className="w-24 h-24 mx-auto object-contain bg-red-50 p-2 rounded-2xl border border-red-100" />
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 border border-red-100 rounded-full text-red-700 text-xs font-bold mb-4">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>غیر مجاز رسائی</span>
+          </div>
+          <h1 className="text-2xl font-black text-gray-900 mb-3 font-nastaleeq leading-tight">سستم تک رسائی کی اجازت نہیں ہے</h1>
+          <p className="text-sm font-bold text-gray-600 mb-6 leading-relaxed font-urdu">
+            آپ کا لاگ ان کردہ ای میل ایڈریس <span className="font-mono text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100">{user.email}</span> اس ڈیجیٹل سسٹم پر ایڈمنسٹریٹر الیکٹرانک میل پتے (<span className="font-mono text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">noorullahsail0@gmail.com</span>) سے میل نہیں کھاتا۔
+          </p>
+          <div className="space-y-3 font-urdu">
+            <button
+              onClick={logout}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg hover:shadow-red-200"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>لاگ آؤٹ اور دوسرے اکاؤنٹ سے لاگ ان کریں</span>
+            </button>
+          </div>
         </motion.div>
       </div>
     );
