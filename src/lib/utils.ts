@@ -99,11 +99,16 @@ export function sanitizeHtml2Canvas(clonedDoc: Document) {
     }
   });
 
-  // 1.1 Remove link tags (external stylesheets)
+  // 1.1 Remove link tags (external stylesheets from other origins that can cause CORS issues)
   const linkTags = Array.from(clonedDoc.getElementsByTagName('link'));
   linkTags.forEach(link => {
-    if (link.rel === 'stylesheet' || link.as === 'style' || link.href?.includes('tailwind')) {
-      link.remove();
+    if (link.rel === 'stylesheet' || link.as === 'style') {
+      const href = link.href || '';
+      // Keep same-origin stylesheets which hold all our Tailwind 4 CSS utility selectors
+      const isSameOrigin = href.startsWith(window.location.origin) || href.startsWith('/') || !href.includes('://');
+      if (!isSameOrigin) {
+        link.remove();
+      }
     }
   });
 
@@ -199,6 +204,7 @@ export function sanitizeHtml2Canvas(clonedDoc: Document) {
     'bg-emerald-600': '#10b981',
     'bg-emerald-500': '#10b981',
     'bg-emerald-50': '#ecfdf5',
+    'text-emerald-955': '#022c22',
     'text-emerald-950': '#022c22',
     'text-emerald-900': '#064e3b',
     'text-emerald-800': '#065f46',
@@ -209,7 +215,11 @@ export function sanitizeHtml2Canvas(clonedDoc: Document) {
     'border-emerald-300': '#6ee7b7',
     'bg-emerald-50/20': 'rgba(236, 253, 245, 0.2)',
     'bg-emerald-50/50': 'rgba(236, 253, 245, 0.5)',
+    'bg-emerald-100/30': 'rgba(209, 250, 229, 0.3)',
     'bg-emerald-100/50': 'rgba(209, 250, 229, 0.5)',
+    'border-emerald-900/10': 'rgba(6, 78, 59, 0.1)',
+    'border-emerald-900/20': 'rgba(6, 78, 59, 0.2)',
+    'border-emerald-900/30': 'rgba(6, 78, 59, 0.3)',
   };
 
   elements.forEach((el) => {
