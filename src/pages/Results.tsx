@@ -140,11 +140,20 @@ export default function Results() {
     }
   };
 
-  const calculateGrade = (percentage: number) => {
-    if (percentage >= 80) return 'ممتاز';
-    if (percentage >= 70) return 'جید جدا';
-    if (percentage >= 60) return 'جید';
-    if (percentage >= 50) return 'مقبول';
+  const calculateGrade = (total: number, maxTotal: number = 100) => {
+    if (maxTotal === 0) return 'راسب';
+    if (maxTotal === 600) {
+      if (total >= 478) return 'ممتاز';
+      if (total >= 357) return 'جید جدا';
+      if (total >= 297) return 'جید';
+      if (total >= 240) return 'مقبول';
+      return 'راسب';
+    }
+    const ratio = total / maxTotal;
+    if (ratio >= 478 / 600 - 0.0001) return 'ممتاز';
+    if (ratio >= 357 / 600 - 0.0001) return 'جید جدا';
+    if (ratio >= 297 / 600 - 0.0001) return 'جید';
+    if (ratio >= 240 / 600 - 0.0001) return 'مقبول';
     return 'راسب';
   };
 
@@ -211,7 +220,7 @@ export default function Results() {
 
         const maxTotal = isHifz ? 100 : subjects.length * 100;
         const percentage = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
-        const grade = calculateGrade(percentage);
+        const grade = calculateGrade(total, maxTotal);
 
         const resultData: any = {
           studentId: student.id,
@@ -655,7 +664,7 @@ export default function Results() {
 
                       const maxTotal = isHifz ? 100 : subjects.length * 100;
                       const percentage = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
-                      const grade = calculateGrade(percentage);
+                      const grade = calculateGrade(total, maxTotal);
 
                       return (
                         <tr key={s.id} className="hover:bg-gray-50 border-b">
@@ -905,7 +914,7 @@ export default function Results() {
                     </div>
                   </div>
                   <div className="flex gap-2 items-end">
-                    <span className="text-emerald-900 whitespace-nowrap font-black text-base font-mono mb-1">Roll No:</span>
+                    <span className="text-emerald-900 whitespace-nowrap font-black text-base font-mono mb-1">Reg No:</span>
                     <div className="flex-1 text-center border-b-2 border-emerald-900/30 pb-0.5">
                       <span className="font-mono font-black text-xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.regNo}</span>
                     </div>
@@ -1199,7 +1208,7 @@ export default function Results() {
                             <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-emerald-800 bg-emerald-50/20 text-sm">{res.totalMarks}</td>
                             <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-sm">{rank}</td>
                             <td className="border py-1.5 px-2 text-center font-black text-xs font-nastaleeq leading-tight">
-                              {res.grade}
+                              {calculateGrade(res.totalMarks, reportSection === Section.BANIN_HIFZ ? 100 : (CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.length || 0) * 100)}
                             </td>
                           </tr>
                         );
