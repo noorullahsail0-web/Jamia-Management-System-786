@@ -62,7 +62,7 @@ export default function Attendance() {
     setLoading(true);
     try {
       const canvas = await html2canvas(printRef.current, {
-        scale: 4, // Higher scale for better resolution
+        scale: 2, // Standard robust scale for clean crisp results without memory limits
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,

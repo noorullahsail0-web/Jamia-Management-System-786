@@ -176,7 +176,7 @@ export default function DakhilKharij() {
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
         const canvas = await html2canvas(page, {
-          scale: 4, // Increased scale for much higher quality
+          scale: 2, // Standard robust scale for clean crisp results without memory limits
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,

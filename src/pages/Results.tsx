@@ -424,7 +424,7 @@ export default function Results() {
     try {
       await document.fonts.ready;
       const canvas = await html2canvas(collectiveRef.current, {
-        scale: 4, // Higher scale for better resolution
+        scale: 2, // Standard robust scale for clean crisp results without memory limits
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -453,7 +453,7 @@ export default function Results() {
     setDownloadingPDF(true);
     try {
       const canvas = await html2canvas(individualRef.current, {
-        scale: 4, // Higher scale for better resolution
+        scale: 2, // Standard robust scale for clean crisp results without memory limits
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
