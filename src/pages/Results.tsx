@@ -140,15 +140,34 @@ export default function Results() {
     }
   };
 
+  // نتائج سسٹم کے انفرادی رزلٹ کارڈ و اجتماعی رزلٹ شیٹ کے لیے گریڈ (کیفیت) کا حساب
   const calculateGrade = (total: number, maxTotal: number = 100) => {
     if (maxTotal === 0) return 'راسب';
+    
+    // اگر کل نمبر 600 ہیں (جیسا کہ بنین اور بنات درس نظامی کے اکثر درجات میں 6 مضامین ہوتے ہیں):
     if (maxTotal === 600) {
-      if (total >= 478) return 'ممتاز';
-      if (total >= 357) return 'جید جدا';
-      if (total >= 297) return 'جید';
-      if (total >= 240) return 'مقبول';
+      if (total >= 478 && total <= 600) return 'ممتاز';
+      if (total >= 357 && total <= 477) return 'جید جدا';
+      if (total >= 297 && total <= 356) return 'جید';
+      if (total >= 240 && total <= 296) return 'مقبول';
+      return 'راسب'; // 1 سے 239 تک 'راسب'
+    }
+
+    // اگر کل نمبر 100 ہیں (جیسے واؤچر/فیصد کے لیے):
+    if (maxTotal === 100) {
+      if (total >= 79.66) return 'ممتاز';
+      if (total >= 59.5) return 'جید جدا';
+      if (total >= 49.5) return 'جید';
+      if (total >= 40.0) return 'مقبول';
       return 'راسب';
     }
+
+    // اگر کل نمبر مختلف ہوں (مثلاً 700):
+    // تو ان حدوں کو متناسب (Proportionally) فیصد کے حساب سے لاگو کیا جائے گا:
+    // ممتاز: 79.67% (478/600)
+    // جید جدا: 59.5% (357/600)
+    // جید: 49.5% (297/600)
+    // مقبول: 40% (240/600)
     const ratio = total / maxTotal;
     if (ratio >= 478 / 600 - 0.0001) return 'ممتاز';
     if (ratio >= 357 / 600 - 0.0001) return 'جید جدا';
@@ -871,13 +890,21 @@ export default function Results() {
                 </div>
               </div>
 
+              {/* Scroll notice for mobile screen */}
+              <div className="w-full no-print px-4 py-2 flex flex-col items-center justify-center lg:hidden bg-emerald-50/50 border-y border-gray-100 mb-4 rounded-xl">
+                <p className="text-xs font-bold text-emerald-800 flex items-center gap-1 font-urdu">
+                  <span>← رزلٹ کارڈ مکمل دیکھنے کے لیے دائیں بائیں اسکرول کریں →</span>
+                </p>
+              </div>
+
               {/* Report Card content wrapper for PDF generation */}
-              <div 
-                ref={individualRef} 
-                className="bg-white mx-auto relative overflow-hidden flex flex-col px-8 py-4 border-2 border-emerald-900 font-urdu" 
-                style={{ width: '15.5cm', height: '21.5cm' }}
-                id="report-card-print"
-              >
+              <div className="overflow-x-auto w-full py-4 scroller-style">
+                <div 
+                  ref={individualRef} 
+                  className="bg-white mx-auto relative overflow-hidden flex flex-col px-8 py-4 border-2 border-emerald-900 font-urdu" 
+                  style={{ width: '15.5cm', height: '21.5cm' }}
+                  id="report-card-print"
+                >
                 {/* Watermark Logo */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
                   <img src={logo} alt="Watermark" className="w-[80%] object-contain" />
@@ -1019,6 +1046,7 @@ export default function Results() {
                   </div>
                 </div>
               </div>
+              </div>
             </motion.div>
           )}
         </div>
@@ -1111,7 +1139,15 @@ export default function Results() {
                 </div>
               </div>
               
-              <div ref={collectiveRef} className="bg-white pt-4 pb-12 px-10 relative overflow-hidden print-area border border-gray-100 shadow-sm mx-auto" style={{ minWidth: '297mm', minHeight: '210mm' }}>
+              {/* Scroll notice for mobile screen */}
+              <div className="w-full no-print px-4 py-2 flex flex-col items-center justify-center lg:hidden bg-emerald-50/50 border-y border-gray-100 mb-4 rounded-xl">
+                <p className="text-xs font-bold text-emerald-800 flex items-center gap-1 font-urdu">
+                  <span>← رزلٹ شیٹ مکمل دیکھنے کے لیے دائیں بائیں اسکرول کریں →</span>
+                </p>
+              </div>
+
+              <div className="overflow-x-auto w-full py-4 scroller-style">
+                <div ref={collectiveRef} className="bg-white pt-4 pb-12 px-10 relative overflow-hidden print-area border border-gray-100 shadow-sm mx-auto" style={{ minWidth: '297mm', minHeight: '210mm' }}>
                 {/* Watermark Logo */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
                   <img src={logo} alt="Watermark" className="w-[500px] h-[500px] object-contain" />
@@ -1228,6 +1264,7 @@ export default function Results() {
                     <div className="w-48 border-b-2 border-emerald-900/30 pb-0.5 mb-2"></div>
                   </div>
                 </div>
+              </div>
               </div>
             </motion.div>
           )}

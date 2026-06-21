@@ -50,7 +50,7 @@ export async function testFirebaseConnection(retries = 3) {
     } catch (error: any) {
       console.warn(`Firestore connection attempt ${i + 1} failed. Code: ${error.code || 'UNKNOWN'}, Message: ${error.message || error}`, error);
       if (error.message && error.message.includes('offline')) {
-        console.error("Firestore client is in offline mode. This often means the backend is unreachable or blocked.");
+        console.warn("Firestore client is in offline mode. This often means the backend is unreachable or blocked. Offline capabilities are active.");
       }
       if (i < retries) {
         // Exponential backoff
@@ -64,7 +64,7 @@ export async function testFirebaseConnection(retries = 3) {
 
 testFirebaseConnection().then(connected => {
   if (!connected) {
-    console.error("FAILED to establish Firestore connection after multiple attempts.");
+    console.warn("INFO: Firestore connection could not reach backend directly on load. Relying on cached offline operations.");
   }
 });
 

@@ -233,24 +233,24 @@ export default function Attendance() {
       ) : students.length > 0 ? (
         viewMode === 'daily' ? (
           <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white rounded-[2.5rem] shadow-premium border border-gray-100 overflow-hidden">
-              <table className="w-full text-right">
-                <thead>
+            <div className="bg-white rounded-3xl md:rounded-[2.5rem] shadow-premium border border-gray-100 overflow-hidden">
+              <table className="w-full text-right block md:table">
+                <thead className="hidden md:table-header-group">
                   <tr className="bg-emerald-950 text-white">
                     <th className="px-8 py-6 font-black text-xl text-right">طالب علم</th>
                     <th className="px-8 py-6 font-black text-xl text-center">حاضری کا اسٹیٹس</th>
                     <th className="px-8 py-6 font-black text-xl text-right">فوری اطلاع</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 block md:table-row-group">
                   {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-emerald-50/30 transition-colors group">
-                      <td className="px-8 py-6">
+                    <tr key={student.id} className="hover:bg-emerald-50/30 transition-colors group flex flex-col md:table-row p-6 md:p-0 border-b border-gray-100 last:border-0 relative">
+                      <td className="block md:table-cell px-2 py-2 md:px-8 md:py-6">
                         <p className="font-black text-emerald-950 text-lg group-hover:text-emerald-700 transition-colors">{student.name}</p>
                         <p className="text-sm font-bold text-gray-400 mt-0.5">{student.fatherName} • {student.regNo}</p>
                       </td>
-                      <td className="px-8 py-6">
-                        <div className="flex justify-center items-center gap-3">
+                      <td className="block md:table-cell px-2 py-2 md:px-8 md:py-6">
+                        <div className="flex justify-between md:justify-center items-center gap-2 md:gap-3 w-full">
                           {[
                             { id: 'present', label: 'حاضر', color: 'bg-emerald-500' },
                             { id: 'absent', label: 'غیر حاضر', color: 'bg-red-500' },
@@ -260,7 +260,7 @@ export default function Attendance() {
                               key={v.id} 
                               onClick={() => handleStatusChange(student.id, v.id as any)} 
                               className={cn(
-                                "px-6 py-3 rounded-2xl transition-all font-black text-base border-2",
+                                "px-3 py-3 md:px-6 md:py-3 rounded-2xl transition-all font-black text-sm md:text-base border-2 flex-1 md:flex-initial text-center whitespace-nowrap",
                                 attendanceMap[student.id] === v.id 
                                   ? `${v.color} text-white border-transparent shadow-lg scale-105` 
                                   : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
@@ -271,13 +271,13 @@ export default function Attendance() {
                           ))}
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-right">
+                      <td className="block md:table-cell px-2 py-2 md:px-8 md:py-6 text-right md:text-right">
                         {attendanceMap[student.id] !== 'present' && (
                           <a 
                             href={getWhatsAppLink(student, attendanceMap[student.id] as any)} 
                             target="_blank" 
                             rel="noreferrer" 
-                            className="inline-flex items-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-6 py-3 rounded-xl font-black transition-all border border-emerald-100 shadow-sm"
+                            className="inline-flex items-center justify-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-5 py-2.5 md:px-6 md:py-3 rounded-xl font-black text-sm md:text-base transition-all border border-emerald-100 shadow-sm w-full md:w-auto"
                           >
                             واٹس ایپ اطلاع
                           </a>
