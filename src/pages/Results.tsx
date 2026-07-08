@@ -405,35 +405,105 @@ export default function Results() {
     const isHifz = reportSection === Section.BANIN_HIFZ;
     const subjects = CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects || [];
 
-    const data = resultsList.map((r, idx) => {
-      const row: any = {
-        'پوزیشن': idx + 1,
-        'رجسٹریشن نمبر': r.regNo,
-        'نام': r.studentName,
-        'ولدیت': r.fatherName,
-      };
+    const headers = [
+      'رجسٹریشن نمبر',
+      'نام طالب علم',
+      'ولدیت'
+    ];
+    if (isHifz) {
+      headers.push('سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ');
+    } else {
+      headers.push(...subjects);
+    }
+    headers.push('مجموعہ', 'پوزیشن', 'کیفیت');
+
+    const aoa: any[][] = [];
+    
+    // Row 1: School Title
+    const titleRow = new Array(headers.length).fill("");
+    titleRow[0] = "جامعہ تعلیم القرآن ناگمان ضلع پشاور";
+    aoa.push(titleRow);
+
+    // Row 2: Subtitle/Meta 1
+    const examUrdu = examType === ExamType.QUARTERLY ? 'سہ ماہی' : examType === ExamType.HALF_YEARLY ? 'شش ماہی' : 'سالانہ';
+    const dateStr = format(new Date(), 'dd/MM/yyyy');
+    const metaRow1 = new Array(headers.length).fill("");
+    metaRow1[0] = `نتیجہ امتحان: ${examUrdu} (${selectedYear}ء)`;
+    metaRow1[Math.floor(headers.length / 2)] = `تاریخ طباعت: ${dateStr}`;
+    aoa.push(metaRow1);
+
+    // Row 3: Subtitle/Meta 2
+    const metaRow2 = new Array(headers.length).fill("");
+    metaRow2[0] = `سیکشن: ${reportSection}`;
+    metaRow2[Math.floor(headers.length / 2)] = `درجہ: ${reportClass}`;
+    aoa.push(metaRow2);
+
+    // Row 4: Empty space
+    aoa.push([]);
+
+    // Row 5: Table Header
+    aoa.push(headers);
+
+    // Row 6+: Table Data Rows
+    resultsList.forEach((res) => {
+      const reportTotals = resultsList.map(r => r.totalMarks).sort((a, b) => b - a);
+      let rank = 1;
+      for (let j = 0; j < reportTotals.length; j++) {
+        if (reportTotals[j] === res.totalMarks) {
+          rank = j + 1;
+          while(j > 0 && reportTotals[j] === reportTotals[j-1]) {
+            rank--; j--;
+          }
+          break;
+        }
+      }
+
+      const maxTotal = isHifz ? 100 : subjects.length * 100;
+      const grade = calculateGrade(res.totalMarks, maxTotal);
+
+      const row: any[] = [
+        res.regNo,
+        res.studentName,
+        res.fatherName
+      ];
 
       if (isHifz) {
-        row['سوال 1'] = r.hifzBreakdown?.q1 || 0;
-        row['سوال 2'] = r.hifzBreakdown?.q2 || 0;
-        row['سوال 3'] = r.hifzBreakdown?.q3 || 0;
-        row['لہجہ'] = r.hifzBreakdown?.lahja || 0;
-        row['صفائی'] = r.hifzBreakdown?.safai || 0;
-        row['ادعیہ'] = r.hifzBreakdown?.adiya || 0;
+        row.push(
+          res.hifzBreakdown?.q1 ?? 0,
+          res.hifzBreakdown?.q2 ?? 0,
+          res.hifzBreakdown?.q3 ?? 0,
+          res.hifzBreakdown?.lahja ?? 0,
+          res.hifzBreakdown?.safai ?? 0,
+          res.hifzBreakdown?.adiya ?? 0
+        );
       } else {
         subjects.forEach(s => {
-          row[s] = r.subjects?.[s] || 0;
+          row.push(res.subjects?.[s] ?? 0);
         });
       }
 
-      row['میزان'] = r.totalMarks;
-      row['فیصد'] = r.percentage.toFixed(1) + '%';
-      row['grade'] = r.grade;
-
-      return row;
+      row.push(res.totalMarks, rank, grade);
+      aoa.push(row);
     });
 
-    const ws = XLSX.utils.json_to_sheet(data);
+    // Empty space before signatures
+    aoa.push([]);
+    aoa.push([]);
+
+    // Signatures Row
+    const sigRow = new Array(headers.length).fill("");
+    sigRow[1] = "دستخط ناظم: _______________________";
+    sigRow[headers.length - 2] = "دستخط مہتمم: _______________________";
+    aoa.push(sigRow);
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    
+    // Add merge metadata to the worksheet
+    ws['!merges'] = [
+      // Merge Title row (Row 0, columns 0 to headers.length-1)
+      { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }
+    ];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Results");
     XLSX.writeFile(wb, `Collective_Result_${reportClass}_${examType}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
@@ -1240,18 +1310,18 @@ export default function Results() {
                   <table className="w-full text-right border-collapse text-xs border-2 border-emerald-900">
                     <thead>
                       <tr className="bg-emerald-900 text-white font-nastaleeq">
-                        <th className="border-r border-emerald-800 py-3 px-2 w-36 text-center font-black text-sm">رجسٹریشن نمبر</th>
-                        <th className="border-r border-emerald-800 py-3 px-2 w-40 text-right font-black text-sm">نام طالب علم</th>
-                        <th className="border-r border-emerald-800 py-3 px-2 w-44 font-black text-sm">ولدیت</th>
+                        <th className="border border-emerald-800 py-3 px-2 w-36 text-center font-black text-sm">رجسٹریشن نمبر</th>
+                        <th className="border border-emerald-800 py-3 px-2 w-40 text-right font-black text-sm">نام طالب علم</th>
+                        <th className="border border-emerald-800 py-3 px-2 w-44 font-black text-sm">ولدیت</th>
                         {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                          <th key={s} className="border-r border-emerald-800 py-3 px-2 text-xs w-20 text-center font-black">{s}</th>
+                          <th key={s} className="border border-emerald-800 py-3 px-2 text-xs w-20 text-center font-black">{s}</th>
                         ))}
                         {reportSection === Section.BANIN_HIFZ && ['سوال 1', 'سوال 2', 'سوال 3', 'لہجہ', 'صفائی', 'ادعیہ'].map(s => (
-                          <th key={s} className="border-r border-emerald-800 py-3 px-2 text-center font-black text-xs">{s}</th>
+                          <th key={s} className="border border-emerald-800 py-3 px-2 text-center font-black text-xs">{s}</th>
                         ))}
-                        <th className="border-r border-emerald-800 py-3 px-2 w-20 text-center font-black text-sm">مجموعہ</th>
-                        <th className="border-r border-emerald-800 py-3 px-2 w-16 text-center font-black text-sm">پوزیشن</th>
-                        <th className="border py-3 px-2 w-24 text-center font-black text-sm">کیفیت</th>
+                        <th className="border border-emerald-800 py-3 px-2 w-20 text-center font-black text-sm">مجموعہ</th>
+                        <th className="border border-emerald-800 py-3 px-2 w-16 text-center font-black text-sm">پوزیشن</th>
+                        <th className="border border-emerald-800 py-3 px-2 w-24 text-center font-black text-sm">کیفیت</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1272,25 +1342,25 @@ export default function Results() {
 
                         return (
                           <tr key={i} className="hover:bg-gray-50 border-b border-emerald-900/10">
-                            <td className="border-r border-emerald-900/20 py-1.5 px-2 font-mono whitespace-nowrap text-center text-xs">{res.regNo}</td>
-                            <td className="border-r border-emerald-900/20 py-1.5 px-2 font-nastaleeq font-black text-right text-base leading-tight">{res.studentName}</td>
-                            <td className="border-r border-emerald-900/20 py-1.5 px-2 text-emerald-950 font-nastaleeq text-sm font-bold leading-tight">{res.fatherName}</td>
+                            <td className="border border-emerald-900/40 py-1.5 px-2 font-mono whitespace-nowrap text-center text-xs">{res.regNo}</td>
+                            <td className="border border-emerald-900/40 py-1.5 px-2 font-nastaleeq font-black text-right text-base leading-tight">{res.studentName}</td>
+                            <td className="border border-emerald-900/40 py-1.5 px-2 text-emerald-950 font-nastaleeq text-sm font-bold leading-tight">{res.fatherName}</td>
                             {reportSection !== Section.BANIN_HIFZ && CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.map(s => (
-                              <td key={s} className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-xs">{res.subjects?.[s] || '-'}</td>
+                              <td key={s} className="border border-emerald-900/40 py-1.5 px-2 text-center font-black text-xs">{res.subjects?.[s] || '-'}</td>
                             ))}
                             {reportSection === Section.BANIN_HIFZ && (
                               <>
-                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q1}</td>
-                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q2}</td>
-                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q3}</td>
-                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.lahja}</td>
-                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.safai}</td>
-                                <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.adiya}</td>
+                                <td className="border border-emerald-900/40 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q1}</td>
+                                <td className="border border-emerald-900/40 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q2}</td>
+                                <td className="border border-emerald-900/40 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.q3}</td>
+                                <td className="border border-emerald-900/40 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.lahja}</td>
+                                <td className="border border-emerald-900/40 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.safai}</td>
+                                <td className="border border-emerald-900/40 py-1.5 px-2 text-center text-xs font-bold">{res.hifzBreakdown?.adiya}</td>
                               </>
                             )}
-                            <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-emerald-800 bg-emerald-50/20 text-sm">{res.totalMarks}</td>
-                            <td className="border-r border-emerald-900/20 py-1.5 px-2 text-center font-black text-sm">{rank}</td>
-                            <td className="border py-1.5 px-2 text-center font-black text-xs font-nastaleeq leading-tight">
+                            <td className="border border-emerald-900/40 py-1.5 px-2 text-center font-black text-emerald-800 bg-emerald-50/20 text-sm">{res.totalMarks}</td>
+                            <td className="border border-emerald-900/40 py-1.5 px-2 text-center font-black text-sm">{rank}</td>
+                            <td className="border border-emerald-900/40 py-1.5 px-2 text-center font-black text-xs font-nastaleeq leading-tight">
                               {calculateGrade(res.totalMarks, reportSection === Section.BANIN_HIFZ ? 100 : (CLASS_DATA[reportSection as Section]?.find(c => c.name === reportClass)?.subjects.length || 0) * 100)}
                             </td>
                           </tr>
