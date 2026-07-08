@@ -105,6 +105,7 @@ export default function Attendance() {
       );
       const snapshot = await getDocs(q);
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+      docs.sort((a, b) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true }));
       setStudents(docs);
       const initialMap: Record<string, 'present' | 'absent' | 'leave'> = {};
       docs.forEach(s => initialMap[s.id] = 'present');
@@ -127,6 +128,7 @@ export default function Attendance() {
       );
       const sSnapshot = await getDocs(sq);
       const sDocs = sSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+      sDocs.sort((a, b) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true }));
       setStudents(sDocs);
       const start = format(startOfMonth(new Date(selectedYear, selectedMonth)), 'yyyy-MM-dd');
       const end = format(endOfMonth(new Date(selectedYear, selectedMonth)), 'yyyy-MM-dd');

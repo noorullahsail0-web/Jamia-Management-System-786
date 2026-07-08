@@ -24,49 +24,43 @@ export const auth = getAuth(app);
 export const storage = getStorage(app);
 
 // Simple connection check without blocking with longer timeout
-export async function testFirebaseConnection(retries = 3) {
-  for (let i = 0; i <= retries; i++) {
+export async function testFirebaseConnection() {
+  if (typeof window !== 'undefined' && !navigator.onLine) {
+    return false;
+  }
+  
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    // Check general connectivity
+    await fetch('https://www.google.com', { 
+      method: 'HEAD', 
+      mode: 'no-cors',
+      signal: controller.signal 
+    });
+    clearTimeout(timeoutId);
+    return true;
+  } catch (e) {
     try {
-      console.log(`Checking Firestore connection to database: ${firebaseConfig.firestoreDatabaseId || '(default)'} (attempt ${i + 1})...`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
       
-      // Use getDocFromServer to force a network request
-      const testDoc = doc(db, 'test', 'connection');
-      const connectionPromise = getDocFromServer(testDoc).catch(err => {
-        // If it's "not-found" or "permission-denied", the server was reached!
-        // These are valid responses indicating connectivity to the backend.
-        if (err.code === 'not-found' || err.code === 'permission-denied') {
-          return { exists: () => false };
-        }
-        throw err;
+      // Fallback: Check connection to the Firebase domain
+      await fetch(`https://${firebaseConfig.projectId}.firebaseapp.com`, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        signal: controller.signal
       });
-
-      await Promise.race([
-        connectionPromise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Connectivity test timeout (15s)')), 15000))
-      ]);
-      
-      console.log("Firebase connection established successfully.");
+      clearTimeout(timeoutId);
       return true;
-    } catch (error: any) {
-      console.warn(`Firestore connection attempt ${i + 1} failed. Code: ${error.code || 'UNKNOWN'}, Message: ${error.message || error}`, error);
-      if (error.message && error.message.includes('offline')) {
-        console.warn("Firestore client is in offline mode. This often means the backend is unreachable or blocked. Offline capabilities are active.");
-      }
-      if (i < retries) {
-        // Exponential backoff
-        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay)); 
-      }
+    } catch (err) {
+      console.warn("Firestore connection check failed: network is offline or blocked.");
+      return false;
     }
   }
-  return false;
 }
 
-testFirebaseConnection().then(connected => {
-  if (!connected) {
-    console.warn("INFO: Firestore connection could not reach backend directly on load. Relying on cached offline operations.");
-  }
-});
 
 export enum OperationType {
   CREATE = 'create',
