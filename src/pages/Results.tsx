@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { Section, Student, ExamResult, ExamType } from '../types';
 import { CLASS_DATA } from '../constants';
-import { GraduationCap, Search, Save, FileText, ChevronRight, Loader2, Info, FileSpreadsheet, Download } from 'lucide-react';
+import { GraduationCap, Search, Save, FileText, ChevronRight, Loader2, Info, FileSpreadsheet, Download, Copy, Image } from 'lucide-react';
 import { cn, sanitizeHtml2Canvas } from '../lib/utils';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
@@ -44,6 +44,8 @@ export default function Results() {
   const [classResults, setClassResults] = useState<Record<string, any>>({}); // studentId -> { subjects: {}, hifz: {} }
 
   const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [copyingImage, setCopyingImage] = useState(false);
+  const [downloadingImage, setDownloadingImage] = useState(false);
   const collectiveRef = useRef<HTMLDivElement>(null);
   const individualRef = useRef<HTMLDivElement>(null);
 
@@ -568,6 +570,81 @@ export default function Results() {
     }
   };
 
+  const copyIndividualAsImage = async () => {
+    if (!individualRef.current) return;
+    setCopyingImage(true);
+    try {
+      await document.fonts.ready;
+      const canvas = await html2canvas(individualRef.current, {
+        scale: 2.5, // Crisp resolution for copy
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          sanitizeHtml2Canvas(clonedDoc);
+        }
+      });
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert('تصویر بنانے میں غلطی ہوئی۔');
+          return;
+        }
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'image/png': blob
+            })
+          ]);
+          alert('رپورٹ کارڈ کی تصویر کامیابی سے کاپی ہو گئی ہے! اب نیچے سبز بٹن "واٹس ایپ اطلاع" پر کلک کریں اور وہاں چیٹ میں جا کر تصویر پیسٹ (Ctrl+V یا Paste) کر کے بھیج دیں۔');
+        } catch (err) {
+          console.error('Clipboard copy failed:', err);
+          // Fallback to auto download
+          const link = document.createElement('a');
+          link.download = `Report_Card_${student?.name || 'student'}_${examType}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          alert('سیکیورٹی وجوہات کی بناء پر آپ کا براؤزر خودکار کاپی کی اجازت نہیں دے رہا۔ تصویر ڈاؤن لوڈ کر دی گئی ہے، اب آپ اسے واٹس ایپ پر اٹیچ کر سکتے ہیں!');
+        }
+      }, 'image/png');
+    } catch (e) {
+      console.error(e);
+      alert('رپورٹ کارڈ کی تصویر بنانے میں غلطی ہوئی۔');
+    } finally {
+      setCopyingImage(false);
+    }
+  };
+
+  const downloadIndividualAsImage = async () => {
+    if (!individualRef.current) return;
+    setDownloadingImage(true);
+    try {
+      await document.fonts.ready;
+      const canvas = await html2canvas(individualRef.current, {
+        scale: 2.5, // Crisp resolution for download
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          sanitizeHtml2Canvas(clonedDoc);
+        }
+      });
+      
+      const link = document.createElement('a');
+      link.download = `Report_Card_${student?.name || 'student'}_${examType}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      alert('رپورٹ کارڈ کی تصویر کامیابی سے ڈاؤن لوڈ ہو گئی ہے!');
+    } catch (e) {
+      console.error(e);
+      alert('تصویر ڈاؤن لوڈ کرنے میں غلطی ہوئی۔');
+    } finally {
+      setDownloadingImage(false);
+    }
+  };
+
   const downloadIndividualExcel = () => {
     if (!student) return;
     
@@ -969,6 +1046,22 @@ export default function Results() {
                     {downloadingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
                     پی ڈی ایف
                   </button>
+                  <button
+                    onClick={copyIndividualAsImage}
+                    disabled={copyingImage}
+                    className="bg-sky-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-sky-700 shadow-lg shadow-sky-100 disabled:opacity-50 font-urdu"
+                  >
+                    {copyingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <Copy className="w-5 h-5" />}
+                    رپورٹ کارڈ تصویر کاپی کریں
+                  </button>
+                  <button
+                    onClick={downloadIndividualAsImage}
+                    disabled={downloadingImage}
+                    className="bg-indigo-50 text-indigo-700 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-100 transition-all font-urdu border border-indigo-100 disabled:opacity-50"
+                  >
+                    {downloadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <Image className="w-5 h-5" />}
+                    تصویر ڈاؤن لوڈ کریں
+                  </button>
                   <a
                     href={getIndividualWhatsAppLink(student)}
                     target="_blank"
@@ -990,19 +1083,48 @@ export default function Results() {
               </div>
 
               {/* WhatsApp instruction notification block */}
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-amber-900 text-sm font-urdu leading-relaxed max-w-4xl mx-auto mb-6 no-print">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-900 text-sm font-urdu leading-relaxed max-w-4xl mx-auto mb-6 no-print">
                 <div className="flex gap-3 items-start">
-                  <span className="text-xl">⚠️</span>
-                  <div>
-                    <p className="font-bold text-base text-amber-950 mb-1">اہم نوٹ برائے واٹس ایپ اٹیچمنٹ:</p>
-                    <p className="text-sm">
-                      واٹس ایپ کی پالیسی کے تحت کسی ویب سائٹ سے براہِ راست موبائل یا کمپیوٹر کی فائل خودکار طریقے سے اٹیچ نہیں کی جا سکتی۔ رزلٹ کارڈ پی ڈی ایف بھیجنے کے لیے براہِ کرم درج ذیل تین آسان اقدامات کریں:
-                    </p>
-                    <ol className="list-decimal list-inside text-sm mt-2 space-y-1 bg-amber-100/50 p-3 rounded-xl border border-amber-200/50">
-                      <li>پہلے لال بٹن <strong>"پی ڈی ایف"</strong> پر کلک کر کے رپورٹ کارڈ ڈاؤن لوڈ کر لیں۔</li>
-                      <li>ڈاؤن لوڈ ہونے کے بعد، سبز بٹن <strong>"واٹس ایپ اطلاع"</strong> پر کلک کریں۔ اس سے سرپرست کا واٹس ایپ نمبر اور پیغام خود بخود کھل جائے گا۔</li>
-                      <li>واٹس ایپ چیٹ میں اٹیچمنٹ والے آئیکن (کاغذی کلپ 📎) پر کلک کر کے ڈاؤن لوڈ شدہ رپورٹ کارڈ پی ڈی ایف فائل منتخب کر کے بھیج دیں۔</li>
-                    </ol>
+                  <span className="text-2xl mt-1">💡</span>
+                  <div className="space-y-4 w-full">
+                    <div>
+                      <p className="font-bold text-lg text-amber-950 mb-1">واٹس ایپ پر رپورٹ کارڈ بھیجنے کے آسان طریقے:</p>
+                      <p className="text-sm text-amber-900">
+                        واٹس ایپ کی سیکیورٹی پالیسی کی وجہ سے ہم براہِ راست براؤزر سے اٹیچمنٹ واٹس ایپ پر نہیں بھیج سکتے، لیکن اب آپ کے پاس رپورٹ کارڈ کو واٹس ایپ پر شیئر کرنے کے دو بہترین اور آسان طریقے ہیں:
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <div className="bg-sky-50 border border-sky-100 p-4 rounded-xl space-y-2">
+                        <p className="font-bold text-sky-950 text-base flex items-center gap-1">
+                          <span className="text-lg">⭐</span>
+                          <span>طریقہ نمبر 1: سکرین شاٹ/تصویر کاپی کرنا (آسان اور تیز ترین)</span>
+                        </p>
+                        <p className="text-xs text-sky-900 leading-normal">
+                          فائل ڈاؤن لوڈ کرنے اور گیلری یا موبائل کے فولڈرز میں ڈھونڈنے کی کوئی ضرورت نہیں!
+                        </p>
+                        <ol className="list-decimal list-inside text-xs text-sky-900 space-y-1">
+                          <li>نیلے بٹن <strong>"رپورٹ کارڈ تصویر کاپی کریں"</strong> پر کلک کریں۔ تصویر خودکار کاپی ہو جائے گی۔</li>
+                          <li>سبز بٹن <strong>"واٹس ایپ اطلاع"</strong> پر کلک کریں۔ چیٹ کھل جائے گی۔</li>
+                          <li>چیٹ میں جا کر صرف <strong>پیسٹ (Paste / Ctrl+V)</strong> کریں اور بھیج دیں!</li>
+                        </ol>
+                      </div>
+
+                      <div className="bg-amber-100/50 border border-amber-200 p-4 rounded-xl space-y-2">
+                        <p className="font-bold text-amber-950 text-base flex items-center gap-1">
+                          <span>📄</span>
+                          <span>طریقہ نمبر 2: پی ڈی ایف فائل اٹیچ کرنا</span>
+                        </p>
+                        <p className="text-xs text-amber-900 leading-normal">
+                          اگر آپ اصل پی ڈی ایف دستاویز اٹیچ کر کے بھیجنا چاہتے ہیں:
+                        </p>
+                        <ol className="list-decimal list-inside text-xs text-amber-900 space-y-1">
+                          <li>سرخ بٹن <strong>"پی ڈی ایف"</strong> پر کلک کر کے فائل ڈاؤن لوڈ کر لیں۔</li>
+                          <li>سبز بٹن <strong>"واٹس ایپ اطلاع"</strong> پر کلک کریں۔ چیٹ کھل جائے گی۔</li>
+                          <li>چیٹ میں اٹیچمنٹ والے آئیکن (📎) پر کلک کر کے ڈاؤن لوڈز سے پی ڈی ایف فائل بھیج دیں۔</li>
+                        </ol>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
