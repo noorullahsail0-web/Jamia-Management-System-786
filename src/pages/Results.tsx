@@ -919,6 +919,24 @@ export default function Results() {
                 </div>
               </div>
 
+              {/* WhatsApp instruction notification block */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-amber-900 text-sm font-urdu leading-relaxed max-w-4xl mx-auto mb-6 no-print">
+                <div className="flex gap-3 items-start">
+                  <span className="text-xl">⚠️</span>
+                  <div>
+                    <p className="font-bold text-base text-amber-950 mb-1">اہم نوٹ برائے واٹس ایپ اٹیچمنٹ:</p>
+                    <p className="text-sm">
+                      واٹس ایپ کی پالیسی کے تحت کسی ویب سائٹ سے براہِ راست موبائل یا کمپیوٹر کی فائل خودکار طریقے سے اٹیچ نہیں کی جا سکتی۔ رزلٹ کارڈ پی ڈی ایف بھیجنے کے لیے براہِ کرم درج ذیل تین آسان اقدامات کریں:
+                    </p>
+                    <ol className="list-decimal list-inside text-sm mt-2 space-y-1 bg-amber-100/50 p-3 rounded-xl border border-amber-200/50">
+                      <li>پہلے لال بٹن <strong>"پی ڈی ایف"</strong> پر کلک کر کے رپورٹ کارڈ ڈاؤن لوڈ کر لیں۔</li>
+                      <li>ڈاؤن لوڈ ہونے کے بعد، سبز بٹن <strong>"واٹس ایپ اطلاع"</strong> پر کلک کریں۔ اس سے سرپرست کا واٹس ایپ نمبر اور پیغام خود بخود کھل جائے گا۔</li>
+                      <li>واٹس ایپ چیٹ میں اٹیچمنٹ والے آئیکن (کاغذی کلپ 📎) پر کلک کر کے ڈاؤن لوڈ شدہ رپورٹ کارڈ پی ڈی ایف فائل منتخب کر کے بھیج دیں۔</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
               {/* Scroll notice for mobile screen */}
               <div className="w-full no-print px-4 py-2 flex flex-col items-center justify-center lg:hidden bg-emerald-50/50 border-y border-gray-100 mb-4 rounded-xl">
                 <p className="text-xs font-bold text-emerald-800 flex items-center gap-1 font-urdu">
