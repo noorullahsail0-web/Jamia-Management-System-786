@@ -55,22 +55,27 @@ export default function App() {
 
   const checkConnection = async () => {
     setCheckingConnection(true);
-    const isConnected = await testFirebaseConnection();
+    const isConnected = typeof navigator !== 'undefined' ? navigator.onLine : true;
     setIsFirestoreConnected(isConnected);
     setCheckingConnection(false);
   };
 
   useEffect(() => {
-    checkConnection();
-    // Re-check periodically
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        testFirebaseConnection().then(isConnected => {
-          setIsFirestoreConnected(isConnected);
-        });
+    const handleOnline = () => setIsFirestoreConnected(true);
+    const handleOffline = () => setIsFirestoreConnected(false);
+
+    if (typeof window !== 'undefined') {
+      setIsFirestoreConnected(navigator.onLine);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
       }
-    }, 60000);
-    return () => clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -356,24 +361,23 @@ export default function App() {
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 bg-red-50 border-2 border-red-200 p-4 rounded-2xl flex flex-col items-center justify-between gap-4 shadow-sm"
+              className="mb-6 bg-amber-50 border-2 border-amber-200 p-4 rounded-2xl flex flex-col items-center justify-between gap-4 shadow-sm text-right"
             >
-              <div className="flex flex-col md:flex-row items-center gap-4 text-red-700 w-full">
-                <div className="bg-red-100 p-2 rounded-full shrink-0">
+              <div className="flex flex-col md:flex-row items-center gap-4 text-amber-800 w-full">
+                <div className="bg-amber-100 p-2.5 rounded-full shrink-0 text-amber-650">
                   <WifiOff className="w-6 h-6" />
                 </div>
                 <div className="text-right flex-1">
-                  <h3 className="font-black text-lg">ڈیٹا بیس سے رابطہ منقطع ہے (Offline)</h3>
-                  <p className="text-sm opacity-90">سسٹم انٹرنیٹ کے بغیر کام نہیں کر سکتا۔ اگر آپ کا انٹرنیٹ ٹھیک ہے تو غالباً سرور میں مسئلہ ہے۔</p>
-                  <p className="text-[10px] mt-1 font-mono bg-red-100/50 p-1 rounded">Project: paimaish-pro | DB: ai-studio-...</p>
+                  <h3 className="font-black text-base text-amber-950">انٹرنیٹ کنکشن دستیاب نہیں ہے (آف لائن موڈ)</h3>
+                  <p className="text-xs opacity-90 leading-relaxed mt-0.5">آپ اس وقت انٹرنیٹ کے بغیر کام کر رہے ہیں۔ پریشان نہ ہوں! آپ کا اندراج شدہ ڈیٹا محفوظ رہے گا اور جیسے ہی انٹرنیٹ بحال ہوگا، سلیقے سے خودکار طور پر ڈیٹا بیس میں شامل ہو جائے گا۔</p>
                 </div>
                 <button 
                   onClick={checkConnection}
                   disabled={checkingConnection}
-                  className="flex items-center gap-2 bg-red-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-red-700 transition-all disabled:opacity-50 whitespace-nowrap"
+                  className="flex items-center gap-2 bg-amber-600 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-amber-700 transition-all disabled:opacity-50 whitespace-nowrap border border-amber-600/20"
                 >
-                  {checkingConnection ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <RefreshCcw className="w-5 h-5" />}
-                  دوبارہ چیک کریں
+                  {checkingConnection ? <RefreshCcw className="w-3.5 h-3.5 animate-spin" /> : <RefreshCcw className="w-3.5 h-3.5" />}
+                  رابطہ دوبارہ چیک کریں
                 </button>
               </div>
             </motion.div>

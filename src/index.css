@@ -1,5 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Scheherazade+New:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
+
+/* Force Naskh font style on the individual report card for perfect rendering and consistency across device types */
+#report-card-print, 
+#report-card-print * {
+  font-family: "Scheherazade New", "Noto Naskh Arabic", "Amiri", serif !important;
+}
+
+#report-card-print .font-mono,
+#report-card-print .font-mono * {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
 
 @font-face {
     font-family: 'Jameel Noori Nastaleeq';

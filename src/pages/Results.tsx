@@ -1252,25 +1252,77 @@ export default function Results() {
                 </div>
 
                 {/* Summary Section */}
-                <div className="relative mt-0 px-10">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <span className="text-base font-black text-emerald-900">مجموعی فیصد:</span>
-                      <span className="text-xl font-black text-emerald-950 italic">
-                        {(((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
-                          (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
-                          (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 3).toFixed(1)}%
-                      </span>
+                <div className="relative mt-2 px-6">
+                  {/* Grid for individual exams */}
+                  <div className="grid grid-cols-3 gap-2 border-b border-emerald-900/10 pb-2 mb-2 text-center text-sm">
+                    {/* Quarterly */}
+                    <div className="flex flex-col items-center bg-emerald-50/40 py-1 px-2 rounded-lg border border-emerald-900/5">
+                      <span className="font-bold text-emerald-800 text-xs">سہ ماہی رزلٹ</span>
+                      {studentAllResults[ExamType.QUARTERLY] && Number(studentAllResults[ExamType.QUARTERLY].totalMarks) > 0 ? (
+                        <span className="font-black text-emerald-950 mt-0.5 text-xs">
+                          {studentAllResults[ExamType.QUARTERLY].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.QUARTERLY].percentage, 100)})
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 mt-0.5 text-xs">-</span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-base font-black text-emerald-900">مجموعی کیفیت:</span>
-                      <span className="text-2xl font-black text-emerald-950 font-nastaleeq">
-                        {calculateGrade((((studentAllResults[ExamType.QUARTERLY]?.percentage || 0) + 
-                          (studentAllResults[ExamType.HALF_YEARLY]?.percentage || 0) + 
-                          (studentAllResults[ExamType.ANNUAL]?.percentage || 0)) / 300) * 100)}
-                      </span>
+
+                    {/* Half Yearly */}
+                    <div className="flex flex-col items-center bg-emerald-50/40 py-1 px-2 rounded-lg border border-emerald-900/5">
+                      <span className="font-bold text-emerald-800 text-xs">شش ماہی رزلٹ</span>
+                      {studentAllResults[ExamType.HALF_YEARLY] && Number(studentAllResults[ExamType.HALF_YEARLY].totalMarks) > 0 ? (
+                        <span className="font-black text-emerald-950 mt-0.5 text-xs">
+                          {studentAllResults[ExamType.HALF_YEARLY].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.HALF_YEARLY].percentage, 100)})
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 mt-0.5 text-xs">-</span>
+                      )}
+                    </div>
+
+                    {/* Annual */}
+                    <div className="flex flex-col items-center bg-emerald-50/40 py-1 px-2 rounded-lg border border-emerald-900/5">
+                      <span className="font-bold text-emerald-800 text-xs">سالانہ رزلٹ</span>
+                      {studentAllResults[ExamType.ANNUAL] && Number(studentAllResults[ExamType.ANNUAL].totalMarks) > 0 ? (
+                        <span className="font-black text-emerald-950 mt-0.5 text-xs">
+                          {studentAllResults[ExamType.ANNUAL].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.ANNUAL].percentage, 100)})
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 mt-0.5 text-xs">-</span>
+                      )}
                     </div>
                   </div>
+
+                  {/* Corrected Overall Row */}
+                  {(() => {
+                    const enteredExams = [ExamType.QUARTERLY, ExamType.HALF_YEARLY, ExamType.ANNUAL].filter(
+                      type => studentAllResults[type] && Number(studentAllResults[type].totalMarks) > 0
+                    );
+                    
+                    let overallPercentage = 0;
+                    if (enteredExams.length > 0) {
+                      const totalPercentSum = enteredExams.reduce((sum, type) => sum + (studentAllResults[type].percentage || 0), 0);
+                      overallPercentage = totalPercentSum / enteredExams.length;
+                    }
+                    
+                    const overallGrade = enteredExams.length > 0 ? calculateGrade(overallPercentage, 100) : 'راسب';
+                    
+                    return (
+                      <div className="flex justify-between items-center px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-emerald-900">مجموعی فیصد:</span>
+                          <span className="text-base font-black text-emerald-950 italic">
+                            {enteredExams.length > 0 ? `${overallPercentage.toFixed(1)}%` : '-'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-emerald-900">مجموعی کیفیت:</span>
+                          <span className="text-lg font-black text-emerald-950">
+                            {enteredExams.length > 0 ? overallGrade : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Signatures */}

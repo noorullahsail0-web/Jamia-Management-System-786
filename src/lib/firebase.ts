@@ -25,40 +25,10 @@ export const storage = getStorage(app);
 
 // Simple connection check without blocking with longer timeout
 export async function testFirebaseConnection() {
-  if (typeof window !== 'undefined' && !navigator.onLine) {
-    return false;
+  if (typeof window !== 'undefined') {
+    return navigator.onLine;
   }
-  
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    
-    // Check general connectivity
-    await fetch('https://www.google.com', { 
-      method: 'HEAD', 
-      mode: 'no-cors',
-      signal: controller.signal 
-    });
-    clearTimeout(timeoutId);
-    return true;
-  } catch (e) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      
-      // Fallback: Check connection to the Firebase domain
-      await fetch(`https://${firebaseConfig.projectId}.firebaseapp.com`, {
-        method: 'HEAD',
-        mode: 'no-cors',
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      return true;
-    } catch (err) {
-      console.warn("Firestore connection check failed: network is offline or blocked.");
-      return false;
-    }
-  }
+  return true;
 }
 
 
