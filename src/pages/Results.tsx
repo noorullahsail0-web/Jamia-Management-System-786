@@ -1158,7 +1158,7 @@ export default function Results() {
                 </div>
 
                 {/* Student Info Grid */}
-                <div className="relative grid grid-cols-2 gap-x-12 gap-y-2 mb-2">
+                <div className="relative grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
                   <div className="flex gap-2 items-end">
                     <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">طالب علم:</span>
                     <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
@@ -1174,7 +1174,7 @@ export default function Results() {
                   <div className="flex gap-2 items-end">
                     <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">درجہ:</span>
                     <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
-                      <span className="font-black text-xl text-emerald-900 leading-none inline-block whitespace-nowrap">
+                      <span className="font-black text-lg text-emerald-900 leading-none inline-block whitespace-nowrap">
                         {studentAllResults[ExamType.ANNUAL]?.class || studentAllResults[ExamType.HALF_YEARLY]?.class || studentAllResults[ExamType.QUARTERLY]?.class || student.currentClass} ({student.section})
                       </span>
                     </div>

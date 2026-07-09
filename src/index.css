@@ -57,8 +57,8 @@
 }
 
 :root {
-  --urdu-font: "Noto Nastaliq Urdu", serif;
-  --sans-font: "Noto Nastaliq Urdu", "Inter", system-ui, sans-serif;
+  --urdu-font: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
+  --sans-font: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Inter", system-ui, sans-serif;
   color-scheme: light;
 }
 
@@ -104,12 +104,7 @@
   }
 }
 
-@media (min-width: 768px) {
-  :root {
-    --urdu-font: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
-    --sans-font: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", "Inter", system-ui, sans-serif;
-  }
-}
+
 
 @layer base {
   html, body {
