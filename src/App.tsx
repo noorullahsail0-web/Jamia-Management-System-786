@@ -114,8 +114,47 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 text-white select-none relative overflow-hidden" dir="rtl">
+        {/* Glow effects */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative z-10 flex flex-col items-center text-center px-4"
+        >
+          {/* Branded Logo Container with gold/amber glow */}
+          <div className="mb-6 relative">
+            <div className="absolute inset-0 bg-emerald-500/25 rounded-full blur-xl animate-pulse"></div>
+            <img 
+              src={logo} 
+              alt="Logo" 
+              className="w-32 h-32 relative z-10 object-contain bg-white/95 p-4 rounded-full border-2 border-amber-400 shadow-2xl" 
+            />
+          </div>
+          
+          {/* Madrasa Name */}
+          <h1 className="text-2xl md:text-3xl font-bold font-nastaleeq text-amber-100 drop-shadow-md mb-2">
+            جامعہ تعلیم القرآن ناگمان ضلع پشاور
+          </h1>
+          <p className="text-xs md:text-sm font-medium tracking-widest text-emerald-300 font-sans uppercase mb-8">
+            Digital Management System
+          </p>
+          
+          {/* Beautiful Loader */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-xs text-emerald-200/80 font-medium tracking-wide">
+              سسٹم لوڈ ہو رہا ہے، براہِ کرم انتظار کریں...
+            </span>
+          </div>
+        </motion.div>
+        
+        {/* Footer info */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-emerald-400/50 font-mono tracking-wider whitespace-nowrap">
+          v2.0.0 • Digital Management System
+        </div>
       </div>
     );
   }
