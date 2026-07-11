@@ -39,8 +39,13 @@ export default function App() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isIframe, setIsIframe] = useState(false);
+  
+  // PWA states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+  const [showPwaGuideModal, setShowPwaGuideModal] = useState(false);
 
-  // Close sidebar on mobile by default
+  // Close sidebar on mobile by default & PWA installation detection
   useEffect(() => {
     if (window.innerWidth < 1024) {
       setIsSidebarOpen(false);
@@ -51,7 +56,40 @@ export default function App() {
     } catch (e) {
       setIsIframe(true);
     }
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+      console.log('PWA beforeinstallprompt event captured.');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as any).standalone
+    ) {
+      setShowInstallBtn(false);
+    } else {
+      setShowInstallBtn(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      setShowPwaGuideModal(true);
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User prompt response: ${outcome}`);
+    setDeferredPrompt(null);
+  };
 
   const checkConnection = async () => {
     setCheckingConnection(true);
@@ -211,7 +249,7 @@ export default function App() {
             <button
               onClick={login}
               disabled={isLoggingIn}
-              className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg hover:shadow-emerald-200 text-sm disabled:opacity-50 border border-emerald-600/20"
+              className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg hover:shadow-emerald-200 text-sm disabled:opacity-50 border border-emerald-600/20 mb-4"
             >
               {isLoggingIn ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -237,6 +275,33 @@ export default function App() {
               )}
               <span>Google کے ساتھ لاگ ان کریں</span>
             </button>
+
+            {/* PWA Install Banner */}
+            {showInstallBtn && (
+              <div className="mt-6 border-t border-gray-100 pt-6 text-right">
+                <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-emerald-100 p-2 rounded-xl shrink-0 text-emerald-700">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-black text-sm text-emerald-950 mb-1">جامعہ سسٹم کی آفیشل ایپ ڈاؤن لوڈ کریں</h3>
+                      <p className="text-xs text-emerald-800 leading-relaxed mb-3">
+                        اسے اپنے موبائل میں ڈاؤن لوڈ کر کے بالکل ایک عام ایپ (WebAPK) کی طرح چلائیں، جو براؤزر مینو کے بغیر فل اسکرین پر تیز ترین کام کرتی ہے۔
+                      </p>
+                      <button
+                        onClick={handleInstallClick}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all shadow-md text-center"
+                      >
+                        {deferredPrompt ? 'ابھی ایپ انسٹال کریں' : 'ایپ انسٹال کرنے کا طریقہ (شارٹ کٹ فکس)'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
@@ -351,6 +416,25 @@ export default function App() {
           </nav>
 
           <div className="mt-auto pt-2 border-t border-white/5">
+            {/* PWA Install Button inside Sidebar */}
+            {showInstallBtn && (
+              <button
+                onClick={handleInstallClick}
+                className={cn(
+                  "w-full mb-2.5 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs transition-all shadow-md border border-amber-500/10 shrink-0",
+                  !isSidebarOpen && "lg:p-1.5 lg:w-10 lg:h-10 lg:mx-auto"
+                )}
+                title="ایپ انسٹال کریں"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className={cn("transition-all duration-300 whitespace-nowrap", !isSidebarOpen && "lg:hidden")}>
+                  {deferredPrompt ? 'موبائل ایپ انسٹال کریں' : 'ایپ انسٹالیشن گائیڈ'}
+                </span>
+              </button>
+            )}
+
             <div className={cn("bg-emerald-950/50 p-2.5 rounded-xl border border-white/5 mb-2 transition-all duration-300", !isSidebarOpen && "lg:p-1.5 lg:items-center lg:flex lg:justify-center")}>
               <div className="flex items-center gap-2.5">
                 <img 
@@ -439,6 +523,87 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* PWA Guide Modal */}
+      <AnimatePresence>
+        {showPwaGuideModal && (
+          <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4" dir="rtl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="max-w-md w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-emerald-100 text-right font-urdu"
+            >
+              <div className="bg-[#022c22] p-5 text-white flex items-center justify-between border-b border-white/5">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">📱</span>
+                  <h3 className="font-black text-lg font-nastaleeq leading-tight text-white">ایپ انسٹالیشن گائیڈ</h3>
+                </div>
+                <button 
+                  onClick={() => setShowPwaGuideModal(false)}
+                  className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+                >
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 text-sm leading-relaxed text-gray-800">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-950 text-xs">
+                  <p className="font-black mb-1 flex items-center gap-1 text-amber-900">
+                    <span>⚠️</span>
+                    <span>اہم معلومات (شارٹ کٹ اور ایپ کا فرق):</span>
+                  </p>
+                  <p>
+                    اگر آپ کے پاس کروم کے مینو میں <strong>"Install app"</strong> کی بجائے صرف <strong>"Add to Home screen"</strong> آ رہا ہے، تو اس کا مطلب ہے کہ براؤزر پرانا ڈیٹا استعمال کر رہا ہے اور صرف شارٹ کٹ بنائے گا۔ اسے درست کرنا بہت آسان ہے۔
+                  </p>
+                </div>
+
+                <div className="space-y-3.5 text-right">
+                  <div className="flex gap-3 items-start">
+                    <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+                    <div>
+                      <p className="font-black text-gray-900">خفیہ ٹیب (Incognito Tab) آزمائیں (بہترین طریقہ):</p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        کروم براؤزر کے اوپر دائیں کونے میں تین نقطوں <strong>(⋮)</strong> پر کلک کریں اور <strong>"New Incognito tab"</strong> کھولیں۔ وہاں دوبارہ یہ لنک درج کریں:
+                        <br />
+                        <span className="font-sans font-medium text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100/50 block mt-1 text-center select-all">https://jamia-management-system-786.vercel.app/</span>
+                        وہاں جاتے ہی آپ کو نیچے یا مینو میں <strong>"Install App"</strong> (ایپ انسٹال کریں) کا آپشن مل جائے گا۔
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+                    <div>
+                      <p className="font-black text-gray-900">کروم کا "Install App" بٹن استعمال کریں:</p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        تین نقطوں (⋮) والے مینو میں جا کر <strong>"Install app"</strong> یا <strong>"Add to Home screen"</strong> میں سے ہمیشہ "Install" کو منتخب کریں تاکہ یہ شارٹ کٹ کی بجائے ایک آزاد، فل اسکرین ایپ بن کر انسٹال ہو۔
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 items-start">
+                    <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
+                    <div>
+                      <p className="font-black text-gray-900">براؤزر کی کیشے صاف کریں:</p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        اگر پھر بھی مسئلہ ہو، تو کروم کی <strong>Settings &gt; Site Settings &gt; All Sites</strong> میں جا کر اس ویب سائٹ کا ڈیٹا صاف (Clear & Reset) کریں۔ دوبارہ کھولنے پر یہ بالکل صحیح طور پر ایپ کی طرح انسٹال ہو جائے گی۔
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowPwaGuideModal(false)}
+                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-4 rounded-xl shadow-md transition-all text-center text-xs"
+                >
+                  ٹھیک ہے، سمجھ آ گئی
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
