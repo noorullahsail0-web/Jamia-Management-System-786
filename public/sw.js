@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jamia-system-v4';
+const CACHE_NAME = 'jamia-system-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -49,25 +49,36 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // Handle same-origin assets caching safely
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
       return fetch(e.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
+        // Caching successful responses
+        if (!response || response.status !== 200) {
           return response;
         }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(e.request, responseToCache);
-        });
+        
+        // Cache same-origin responses
+        const url = new URL(e.request.url);
+        if (url.origin === self.location.origin) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
+        }
         return response;
-      }).catch(() => {
+      }).catch((err) => {
         // Return cached index.html for SPA navigation requests when offline
         if (e.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match('/index.html').then((cachedIndex) => {
+            return cachedIndex || caches.match('/');
+          });
         }
+        // Throw error to browser instead of returning undefined
+        throw err;
       });
     })
   );
