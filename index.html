@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-title" content="جامعہ سسٹم" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
-    <link rel="manifest" href="/manifest.json?v=4" />
+    <link rel="manifest" href="/manifest.json" />
     <title>جامعہ تعلیم القرآن ناگمان - ڈیجیٹل مینجمنٹ سسٹم</title>
   </head>
   <body>
@@ -19,7 +19,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           // Register the service worker directly for production and Vercel environments
-          navigator.serviceWorker.register('/sw.js?v=4', { scope: '/' })
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then((reg) => {
               console.log('Service Worker Registered Successfully!', reg.scope);
             })
