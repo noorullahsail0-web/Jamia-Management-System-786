@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jamia-system-v3';
+const CACHE_NAME = 'jamia-system-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -11,7 +11,14 @@ const ASSETS = [
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS).catch((err) => console.log('Asset caching error during install:', err));
+      // Robust caching: attempt to cache each asset individually so one error doesn't break the installation
+      return Promise.all(
+        ASSETS.map((asset) => 
+          cache.add(asset).catch((err) => 
+            console.log(`Failed to cache asset ${asset} during install:`, err)
+          )
+        )
+      );
     })
   );
   self.skipWaiting();
