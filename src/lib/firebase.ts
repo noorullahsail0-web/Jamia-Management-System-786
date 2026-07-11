@@ -1,6 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { doc, getDocFromServer, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { 
+  doc, 
+  getDocFromServer, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager 
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -14,10 +20,14 @@ const dbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatab
   ? firebaseConfig.firestoreDatabaseId
   : undefined;
 
-// Initialize Firestore with settings for better reliability in restricted environments
+// Initialize Firestore with robust local persistent cache (IndexedDB)
+// This enables full offline capabilities and instant loading on slow mobile/desktop connections,
+// which is crucial for a PWA running on any network and avoids 10-second backend response timeouts.
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-  localCache: memoryLocalCache(),
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
 }, dbId);
 
 export const auth = getAuth(app);
