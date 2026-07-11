@@ -44,6 +44,7 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showPwaGuideModal, setShowPwaGuideModal] = useState(false);
+  const [swStatus, setSwStatus] = useState<'checking' | 'active' | 'failed'>('checking');
 
   // Close sidebar on mobile by default & PWA installation detection
   useEffect(() => {
@@ -55,6 +56,21 @@ export default function App() {
       setIsIframe(window.self !== window.top);
     } catch (e) {
       setIsIframe(true);
+    }
+
+    // Check Service Worker status
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready
+        .then((reg) => {
+          setSwStatus('active');
+          console.log('Service Worker is active and ready:', reg);
+        })
+        .catch((err) => {
+          setSwStatus('failed');
+          console.error('Service Worker ready check failed:', err);
+        });
+    } else {
+      setSwStatus('failed');
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -527,7 +543,7 @@ export default function App() {
       {/* PWA Guide Modal */}
       <AnimatePresence>
         {showPwaGuideModal && (
-          <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4" dir="rtl">
+          <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 animate-fade-in" dir="rtl">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -537,7 +553,7 @@ export default function App() {
               <div className="bg-[#022c22] p-5 text-white flex items-center justify-between border-b border-white/5">
                 <div className="flex items-center gap-2.5">
                   <span className="text-xl">📱</span>
-                  <h3 className="font-black text-lg font-nastaleeq leading-tight text-white">ایپ انسٹالیشن گائیڈ</h3>
+                  <h3 className="font-black text-lg font-nastaleeq leading-tight text-white">ایپ انسٹال کرنے کا حتمی طریقہ</h3>
                 </div>
                 <button 
                   onClick={() => setShowPwaGuideModal(false)}
@@ -547,47 +563,89 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4 text-sm leading-relaxed text-gray-800">
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-950 text-xs">
-                  <p className="font-black mb-1 flex items-center gap-1 text-amber-900">
+              <div className="p-6 space-y-4 text-sm leading-relaxed text-gray-800 overflow-y-auto max-h-[80vh] custom-scrollbar">
+                {/* Real-time Diagnostics Card */}
+                <div className="bg-emerald-50 border border-emerald-150 rounded-2xl p-4 text-xs space-y-2">
+                  <p className="font-black text-emerald-950 mb-1 flex items-center gap-1.5 text-sm">
+                    <span>⚙️</span>
+                    <span>سسٹم کا لائیو اسٹیٹس (Diagnostics):</span>
+                  </p>
+                  <div className="flex justify-between items-center py-1 border-b border-emerald-100/50">
+                    <span className="text-gray-600 font-medium">سروس ورکر (Service Worker):</span>
+                    {swStatus === 'active' ? (
+                      <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span>فعال اور تیار ہے</span>
+                        <span>✔️</span>
+                      </span>
+                    ) : swStatus === 'checking' ? (
+                      <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span>چیک ہو رہا ہے</span>
+                        <span>⏳</span>
+                      </span>
+                    ) : (
+                      <span className="font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span>لوڈ نہیں ہوا</span>
+                        <span>❌</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-gray-600 font-medium">براؤزر انسٹالر (Prompt State):</span>
+                    {deferredPrompt ? (
+                      <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span>کلک کے لیے تیار</span>
+                        <span>✔️</span>
+                      </span>
+                    ) : (
+                      <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span>مینو سے دستیاب</span>
+                        <span>🔍</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Warning about Incognito */}
+                <div className="bg-red-50 border border-red-150 rounded-2xl p-4 text-red-950 text-xs">
+                  <p className="font-black mb-1 flex items-center gap-1 text-red-900">
                     <span>⚠️</span>
-                    <span>اہم معلومات (شارٹ کٹ اور ایپ کا فرق):</span>
+                    <span>اہم تنبیہ (خفیہ موڈ استعمال نہ کریں):</span>
                   </p>
                   <p>
-                    اگر آپ کے پاس کروم کے مینو میں <strong>"Install app"</strong> کی بجائے صرف <strong>"Add to Home screen"</strong> آ رہا ہے، تو اس کا مطلب ہے کہ براؤزر پرانا ڈیٹا استعمال کر رہا ہے اور صرف شارٹ کٹ بنائے گا۔ اسے درست کرنا بہت آسان ہے۔
+                    گوگل کروم کے <strong>Incognito (خفیہ/پرائیویٹ) موڈ میں ایپ انسٹالیشن مکمل بند ہوتی ہے</strong>۔ اس بات کو یقینی بنائیں کہ آپ کروم کا عام/نارمل موڈ استعمال کر رہے ہیں۔
                   </p>
                 </div>
 
-                <div className="space-y-3.5 text-right">
+                <div className="space-y-4 text-right">
+                  {/* Step 1: Chrome New Menu */}
                   <div className="flex gap-3 items-start">
                     <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
                     <div>
-                      <p className="font-black text-gray-900">خفیہ ٹیب (Incognito Tab) آزمائیں (بہترین طریقہ):</p>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        کروم براؤزر کے اوپر دائیں کونے میں تین نقطوں <strong>(⋮)</strong> پر کلک کریں اور <strong>"New Incognito tab"</strong> کھولیں۔ وہاں دوبارہ یہ لنک درج کریں:
-                        <br />
-                        <span className="font-sans font-medium text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100/50 block mt-1 text-center select-all">https://jamia-management-system-786.vercel.app/</span>
-                        وہاں جاتے ہی آپ کو نیچے یا مینو میں <strong>"Install App"</strong> (ایپ انسٹال کریں) کا آپشن مل جائے گا۔
+                      <p className="font-black text-gray-900">کروم کے نئے "محفوظ اور شیئر کریں" مینو میں دیکھیں:</p>
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                        گوگل کروم کی نئی اپڈیٹ میں انسٹال کا بٹن تبدیل کر دیا گیا ہے۔ براؤزر کے اوپر دائیں کونے میں تین نقطوں <strong>(⋮)</strong> پر کلک کریں، پھر <strong>"Save and share" (محفوظ کریں اور شیئر کریں)</strong> پر جائیں۔ وہاں آپ کو <strong>"Install app"</strong> یا <strong>"جامعہ سسٹم انسٹال کریں"</strong> کا بٹن مل جائے گا!
                       </p>
                     </div>
                   </div>
 
+                  {/* Step 2: Mobile/Android Chrome */}
                   <div className="flex gap-3 items-start">
                     <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
                     <div>
-                      <p className="font-black text-gray-900">کروم کا "Install App" بٹن استعمال کریں:</p>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        تین نقطوں (⋮) والے مینو میں جا کر <strong>"Install app"</strong> یا <strong>"Add to Home screen"</strong> میں سے ہمیشہ "Install" کو منتخب کریں تاکہ یہ شارٹ کٹ کی بجائے ایک آزاد، فل اسکرین ایپ بن کر انسٹال ہو۔
+                      <p className="font-black text-gray-900">موبائل فون پر انسٹال کرنے کا طریقہ:</p>
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                        اپنے اینڈرائیڈ فون کے کروم براؤزر میں یہ لنک کھولیں، تین نقطوں <strong>(⋮)</strong> پر کلک کریں اور مینو سے <strong>"Install app"</strong> یا <strong>"Add to Home screen"</strong> پر کلک کریں۔ ایپ فوری طور پر موبائل کی ہوم اسکرین پر آ جائے گی۔
                       </p>
                     </div>
                   </div>
 
+                  {/* Step 3: Clear and reload (Vercel Fix) */}
                   <div className="flex gap-3 items-start">
                     <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
                     <div>
-                      <p className="font-black text-gray-900">براؤزر کی کیشے صاف کریں:</p>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        اگر پھر بھی مسئلہ ہو، تو کروم کی <strong>Settings &gt; Site Settings &gt; All Sites</strong> میں جا کر اس ویب سائٹ کا ڈیٹا صاف (Clear & Reset) کریں۔ دوبارہ کھولنے پر یہ بالکل صحیح طور پر ایپ کی طرح انسٹال ہو جائے گی۔
+                      <p className="font-black text-gray-900">پرانے ڈیٹا (Cache) کو مکمل ہٹائیں:</p>
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                        چونکہ آپ نے ورسل پر پروجیکٹ دوبارہ ڈیپلائے کیا ہے، براؤزر پرانی فائلیں استعمال کر رہا ہو سکتا ہے۔ کروم کے تین نقطوں پر کلک کر کے <strong>Settings &gt; Privacy and security &gt; Clear browsing data</strong> پر جائیں، وہاں صرف <strong>"Cached images and files"</strong> کو منتخب کر کے صاف کریں اور پیج کو 2 بار ریفریش کریں۔
                       </p>
                     </div>
                   </div>
@@ -595,9 +653,9 @@ export default function App() {
 
                 <button
                   onClick={() => setShowPwaGuideModal(false)}
-                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3 px-4 rounded-xl shadow-md transition-all text-center text-xs"
+                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md transition-all text-center text-xs"
                 >
-                  ٹھیک ہے، سمجھ آ گئی
+                  ٹھیک ہے، میں سمجھ گیا
                 </button>
               </div>
             </motion.div>
