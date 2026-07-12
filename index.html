@@ -17,8 +17,7 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          // Register the service worker directly for production and Vercel environments
+        const registerSW = () => {
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then((reg) => {
               console.log('Service Worker Registered Successfully!', reg.scope);
@@ -26,7 +25,13 @@
             .catch((err) => {
               console.log('Service Worker registration bypassed or failed (expected in sandboxed preview iframe):', err);
             });
-        });
+        };
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+          registerSW();
+        } else {
+          window.addEventListener('load', registerSW);
+        }
       }
     </script>
   </body>
