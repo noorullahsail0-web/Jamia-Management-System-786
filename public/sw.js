@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jamia-system-v6';
+const CACHE_NAME = 'jamia-system-v7';
 const ASSETS = [
   '/',
   '/index.html',

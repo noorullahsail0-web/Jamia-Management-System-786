@@ -12,7 +12,7 @@ import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import logo from '../assets/logo.png';
 
-export default function Results() {
+export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }) {
   const currentYear = new Date().getFullYear();
   const academicYears = Array.from({ length: 2126 - 1995 + 1 }, (_, i) => {
     const y = 1995 + i;
@@ -805,14 +805,16 @@ export default function Results() {
                   <GraduationCap className="w-6 h-6 text-emerald-600" />
                   نتائج اندراج شیٹ - {selectedClass} ({selectedSection})
                 </h3>
-                <button
-                  onClick={saveClassResults}
-                  disabled={saving}
-                  className="bg-emerald-600 px-8 py-3 rounded-xl text-white font-bold hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-100"
-                >
-                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  <span>تمام محفوظ کریں</span>
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={saveClassResults}
+                    disabled={saving}
+                    className="bg-emerald-600 px-8 py-3 rounded-xl text-white font-bold hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-100"
+                  >
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    <span>تمام محفوظ کریں</span>
+                  </button>
+                )}
               </div>
 
               <div className="overflow-x-auto p-1">
@@ -861,6 +863,7 @@ export default function Results() {
                                 <input 
                                   id={`cell-${sIndex}-${kIndex}`}
                                   type="number"
+                                  disabled={isReadOnly}
                                   value={res.hifzBreakdown?.[k] || ''}
                                   onChange={(e) => {
                                     const val = parseInt(e.target.value) || 0;
@@ -873,7 +876,7 @@ export default function Results() {
                                     }));
                                   }}
                                   onKeyDown={(e) => handleCellKeyDown(e, sIndex, kIndex, classStudents.length, 6)}
-                                  className="w-14 text-center py-1 border rounded-md focus:ring-2 focus:ring-emerald-500 font-bold"
+                                  className="w-14 text-center py-1 border rounded-md focus:ring-2 focus:ring-emerald-500 font-bold disabled:bg-gray-50"
                                 />
                               </td>
                             ))
@@ -883,6 +886,7 @@ export default function Results() {
                                 <input 
                                   id={`cell-${sIndex}-${subIndex}`}
                                   type="number"
+                                  disabled={isReadOnly}
                                   value={res.subjects?.[sub] || ''}
                                   onChange={(e) => {
                                     const val = parseInt(e.target.value) || 0;
@@ -895,7 +899,7 @@ export default function Results() {
                                     }));
                                   }}
                                   onKeyDown={(e) => handleCellKeyDown(e, sIndex, subIndex, classStudents.length, subjects.length)}
-                                  className="w-12 text-center py-1 border rounded-md focus:ring-2 focus:ring-emerald-500 font-bold text-sm"
+                                  className="w-12 text-center py-1 border rounded-md focus:ring-2 focus:ring-emerald-500 font-bold text-sm disabled:bg-gray-50"
                                 />
                               </td>
                             ))

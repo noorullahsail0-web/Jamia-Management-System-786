@@ -33,7 +33,7 @@ import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-export default function DakhilKharij() {
+export default function DakhilKharij({ isReadOnly = false }: { isReadOnly?: boolean }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -371,20 +371,20 @@ export default function DakhilKharij() {
                 <th className="px-4 py-4 text-sm font-bold text-gray-600">جماعت</th>
                 <th className="px-4 py-4 text-sm font-bold text-gray-600">درجہ</th>
                 <th className="px-4 py-4 text-sm font-bold text-gray-600 text-center">حالت</th>
-                <th className="px-4 py-4 text-sm font-bold text-gray-600 text-center">ایکشن</th>
+                {!isReadOnly && <th className="px-4 py-4 text-sm font-bold text-gray-600 text-center">ایکشن</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={isReadOnly ? 7 : 8} className="px-6 py-12 text-center text-gray-500">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-emerald-600" />
                     ڈیٹا لوڈ ہو رہا ہے...
                   </td>
                 </tr>
               ) : filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={isReadOnly ? 7 : 8} className="px-6 py-12 text-center text-gray-500">
                     کوئی طالب علم نہیں ملا۔
                   </td>
                 </tr>
@@ -405,26 +405,28 @@ export default function DakhilKharij() {
                         {s.status === 'active' ? 'موجود' : 'خارج'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-sm text-center">
-                      <div className="flex justify-center gap-1">
-                        {s.status === 'active' && (
+                    {!isReadOnly && (
+                      <td className="px-4 py-4 text-sm text-center">
+                        <div className="flex justify-center gap-1">
+                          {s.status === 'active' && (
+                            <button
+                              onClick={() => setWithdrawingStudent(s)}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                              title="خارج کریں"
+                            >
+                              <UserMinus className="w-5 h-5" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => setWithdrawingStudent(s)}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                            title="خارج کریں"
+                            onClick={() => setDeletingStudent(s)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="مکمل ڈیلیٹ کریں"
                           >
-                            <UserMinus className="w-5 h-5" />
+                            <Trash2 className="w-5 h-5" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => setDeletingStudent(s)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="مکمل ڈیلیٹ کریں"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </td>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

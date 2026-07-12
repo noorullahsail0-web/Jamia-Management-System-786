@@ -9,7 +9,7 @@ import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
 import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save, Trash2, AlertCircle, GraduationCap, Users, CheckSquare, Square, TrendingUp } from 'lucide-react';
 import { cn, compressImage } from '../lib/utils';
 
-export default function Admission() {
+export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -337,29 +337,31 @@ export default function Admission() {
           <h1 className="text-2xl font-bold text-gray-900">داخلہ فارم / طلباء کی فہرست</h1>
           <p className="text-gray-500">نئے طلباء کا اندراج کریں اور موجودہ ریکارڈ دیکھیں</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => {
-              setPromoSection('');
-              setPromoClass('');
-              setPromoTargetClass('');
-              setPromoStudents([]);
-              setSelectedPromoIds([]);
-              setShowPromotionModal(true);
-            }}
-            className="flex items-center justify-center gap-2 bg-[#1a237e] hover:bg-[#0d47a1] text-white px-5 py-3 rounded-xl transition-all shadow-md font-bold text-sm"
-          >
-            <GraduationCap className="w-5 h-5 text-indigo-200 animate-pulse" />
-            <span>طلباء کی پروموشن (اگلا درجہ)</span>
-          </button>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl transition-all shadow-md font-bold text-sm"
-          >
-            <UserPlus className="w-5 h-5" />
-            <span>نیا طالب علم شامل کریں</span>
-          </button>
-        </div>
+        {!isReadOnly && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => {
+                setPromoSection('');
+                setPromoClass('');
+                setPromoTargetClass('');
+                setPromoStudents([]);
+                setSelectedPromoIds([]);
+                setShowPromotionModal(true);
+              }}
+              className="flex items-center justify-center gap-2 bg-[#1a237e] hover:bg-[#0d47a1] text-white px-5 py-3 rounded-xl transition-all shadow-md font-bold text-sm"
+            >
+              <GraduationCap className="w-5 h-5 text-indigo-200 animate-pulse" />
+              <span>طلباء کی پروموشن (اگلا درجہ)</span>
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl transition-all shadow-md font-bold text-sm"
+            >
+              <UserPlus className="w-5 h-5" />
+              <span>نیا طالب علم شامل کریں</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Student List */}
@@ -417,17 +419,24 @@ export default function Admission() {
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={() => startEdit(student)}
-                          className="text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg font-bold transition-all border border-emerald-100"
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg font-bold transition-all border",
+                            isReadOnly 
+                              ? "text-blue-600 hover:bg-blue-50 border-blue-100" 
+                              : "text-emerald-600 hover:bg-emerald-50 border-emerald-100"
+                          )}
                         >
-                          ایڈٹ کریں
+                          {isReadOnly ? 'تفصیلات دیکھیں' : 'ایڈٹ کریں'}
                         </button>
-                        <button 
-                          onClick={() => setDeletingStudent(student)}
-                          className="text-red-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg"
-                          title="مکمل ڈیلیٹ کریں"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        {!isReadOnly && (
+                          <button 
+                            onClick={() => setDeletingStudent(student)}
+                            className="text-red-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg"
+                            title="مکمل ڈیلیٹ کریں"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -460,7 +469,8 @@ export default function Admission() {
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-8 overflow-y-auto max-h-[70vh] font-urdu">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <fieldset disabled={isReadOnly} className="contents">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 {/* Photo Upload - Only for Boys, Girls get a symbolic icon */}
                 {selectedSection !== Section.BANAT_DARS_NIYAMI ? (
                   <div className="md:col-span-2 flex justify-center mb-6">
@@ -604,26 +614,29 @@ export default function Admission() {
                   <input {...register('admissionDate', { required: true })} type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" />
                 </div>
               </div>
+              </fieldset>
 
-              <div className="mt-10 flex justify-start">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-[#1a237e] hover:bg-[#0d47a1] disabled:bg-gray-400 text-white font-bold py-3 px-10 rounded-lg flex items-center justify-center gap-3 transition-all shadow-lg"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                      <span>{uploadingInfo || 'محفوظ ہو رہا ہے...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-6 h-6" />
-                      <span>طالب علم محفوظ کریں</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              {!isReadOnly && (
+                <div className="mt-10 flex justify-start">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-[#1a237e] hover:bg-[#0d47a1] disabled:bg-gray-400 text-white font-bold py-3 px-10 rounded-lg flex items-center justify-center gap-3 transition-all shadow-lg"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                        <span>{uploadingInfo || 'محفوظ ہو رہا ہے...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-6 h-6" />
+                        <span>طالب علم محفوظ کریں</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </form>
           </motion.div>
         </div>

@@ -18,6 +18,13 @@ service cloud.firestore {
         request.auth.token.email.lower() == 'noorullahsail0@gmail.com';
     }
 
+    function isAuthorized() {
+      return isSignedIn() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/authorized_emails/$(request.auth.token.email.lower()))
+      );
+    }
+
     // Path Variable & ID Poisoning Guard
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
@@ -59,9 +66,15 @@ service cloud.firestore {
         && (!data.keys().hasAll(['updatedAt']) || (data.updatedAt is string && data.updatedAt.size() <= 100));
     }
 
-    match /students/{studentId} {
-      allow get: if isAdmin() && isValidId(studentId);
+    match /authorized_emails/{email} {
+      allow get: if isSignedIn();
       allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /students/{studentId} {
+      allow get: if isAuthorized() && isValidId(studentId);
+      allow list: if isAuthorized();
       allow create: if isAdmin() && isValidId(studentId) && isValidStudent(incoming());
       allow update: if isAdmin() && isValidId(studentId) && isValidStudent(incoming()) && (
         (!existing().keys().hasAll(['createdAt']) || incoming().createdAt == existing().createdAt)
@@ -80,8 +93,8 @@ service cloud.firestore {
     }
 
     match /attendance/{attendanceId} {
-      allow get: if isAdmin() && isValidId(attendanceId);
-      allow list: if isAdmin();
+      allow get: if isAuthorized() && isValidId(attendanceId);
+      allow list: if isAuthorized();
       allow create: if isAdmin() && isValidId(attendanceId) && isValidAttendance(incoming())
         && exists(/databases/$(database)/documents/students/$(incoming().studentId));
       allow update: if isAdmin() && isValidId(attendanceId) && isValidAttendance(incoming());
@@ -104,8 +117,8 @@ service cloud.firestore {
     }
 
     match /results/{resultId} {
-      allow get: if isAdmin() && isValidId(resultId);
-      allow list: if isAdmin();
+      allow get: if isAuthorized() && isValidId(resultId);
+      allow list: if isAuthorized();
       allow create: if isAdmin() && isValidId(resultId) && isValidExamResult(incoming())
         && exists(/databases/$(database)/documents/students/$(incoming().studentId));
       allow update: if isAdmin() && isValidId(resultId) && isValidExamResult(incoming());

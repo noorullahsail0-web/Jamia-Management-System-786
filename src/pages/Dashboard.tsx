@@ -109,7 +109,13 @@ const QURAN_VERSES = [
   }
 ];
 
-export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) => void }) {
+interface DashboardProps {
+  setActiveTab: (tab: any) => void;
+  isReadOnly?: boolean;
+  userRole?: 'admin' | 'viewer' | null;
+}
+
+export default function Dashboard({ setActiveTab, isReadOnly = false, userRole = 'viewer' }: DashboardProps) {
   const [stats, setStats] = useState({
     total: 0,
     banin: 0,
@@ -117,6 +123,13 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
     hifz: 0
   });
   const [loading, setLoading] = useState(true);
+
+  // States for Authorized User Management (only used if admin)
+  const [authorizedEmails, setAuthorizedEmails] = useState<any[]>([]);
+  const [newEmail, setNewEmail] = useState('');
+  const [isAddingEmail, setIsAddingEmail] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
 
   const getDailyVerse = () => {
     const today = new Date();
@@ -129,6 +142,80 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
   };
 
   const dailyVerse = getDailyVerse();
+
+  // Fetch authorized emails for administrative panel
+  useEffect(() => {
+    if (userRole === 'admin') {
+      const fetchAuthorizedEmails = async () => {
+        try {
+          const querySnapshot = await getDocs(collection(db, 'authorized_emails'));
+          const emailsList = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setAuthorizedEmails(emailsList);
+        } catch (error) {
+          console.error("Error fetching authorized emails:", error);
+        }
+      };
+      fetchAuthorizedEmails();
+    }
+  }, [userRole]);
+
+  const handleAddEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail.trim()) return;
+    
+    const emailClean = newEmail.toLowerCase().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailClean)) {
+      setEmailError('براہِ کرم ایک درست ای میل ایڈریس درج کریں۔');
+      return;
+    }
+    
+    if (emailClean === 'noorullahsail0@gmail.com') {
+      setEmailError('یہ ایڈمنسٹریٹر کا اپنا ای میل پتا ہے۔ اسے شامل کرنے کی ضرورت نہیں ہے۔');
+      return;
+    }
+    
+    setIsAddingEmail(true);
+    setEmailError(null);
+    setEmailSuccess(null);
+    
+    try {
+      const { doc: fireDoc, setDoc } = await import('firebase/firestore');
+      await setDoc(fireDoc(db, 'authorized_emails', emailClean), {
+        email: emailClean,
+        role: 'viewer',
+        addedAt: new Date().toISOString(),
+      });
+      
+      setAuthorizedEmails(prev => [
+        ...prev.filter(item => item.id !== emailClean),
+        { id: emailClean, email: emailClean, role: 'viewer', addedAt: new Date().toISOString() }
+      ]);
+      setNewEmail('');
+      setEmailSuccess('ای میل ایڈریس کامیابی کے ساتھ مجاز فہرست میں شامل کر دیا گیا ہے۔');
+    } catch (error: any) {
+      console.error("Error adding email:", error);
+      setEmailError('ڈیٹا بیس میں ای میل شامل کرنے میں ناکامی ہوئی۔');
+    } finally {
+      setIsAddingEmail(false);
+    }
+  };
+
+  const handleRemoveEmail = async (emailId: string) => {
+    if (!window.confirm(`کیا آپ واقعی ${emailId} کو مجاز فہرست سے ہٹانا چاہتے ہیں؟`)) return;
+    
+    try {
+      const { doc: fireDoc, deleteDoc } = await import('firebase/firestore');
+      await deleteDoc(fireDoc(db, 'authorized_emails', emailId));
+      setAuthorizedEmails(prev => prev.filter(item => item.id !== emailId));
+    } catch (error) {
+      console.error("Error removing email:", error);
+      alert('ای میل ہٹانے میں مسئلہ پیش آیا۔');
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -221,7 +308,9 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
               <Sparkles className="w-3.5 h-3.5 animate-spin" />
               <span>جامعہ ڈیجیٹل ڈیش بورڈ</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black font-nastaleeq tracking-normal leading-[1.3] text-transparent bg-clip-text bg-gradient-to-r from-emerald-100 via-white to-teal-50">خوش آمدید، نوراللہ صاحب!</h1>
+            <h1 className="text-4xl md:text-5xl font-black font-nastaleeq tracking-normal leading-[1.3] text-transparent bg-clip-text bg-gradient-to-r from-emerald-100 via-white to-teal-50">
+              {userRole === 'admin' ? 'خوش آمدید، نوراللہ صاحب!' : 'خوش آمدید، معزز مہمانِ علمی!'}
+            </h1>
             <p className="text-emerald-200/80 font-bold text-base md:text-lg">جامعہ تعلیم القرآن ناگمان ضلع پشاور کے انتظام و تعلیمی ارتقاء کا خوبصورت سفر</p>
           </div>
           
@@ -437,6 +526,122 @@ export default function Dashboard({ setActiveTab }: { setActiveTab: (tab: any) =
           </div>
         </div>
       </div>
+
+      {/* Users & Permissions Panel (Only visible to admin) */}
+      {userRole === 'admin' && (
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 mt-8"
+        >
+          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+            <div>
+              <h3 className="text-2xl font-black text-gray-900 font-nastaleeq">صارفین کے اجازت نامے (یوزرز اور پرمیشنز)</h3>
+              <p className="text-xs text-gray-500 font-bold mt-1">اپنے اساتذہ یا دوستوں کے ای میلز شامل کریں تاکہ وہ موبائل پر صرف دیکھنے (Read-Only) کی حد تک سسٹم کھول سکیں</p>
+            </div>
+            
+            <form onSubmit={handleAddEmail} className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto shrink-0">
+              <div className="relative flex-1 sm:w-80">
+                <input 
+                  type="email" 
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="نیا ای میل ایڈریس درج کریں (مثلاً friend@gmail.com)..."
+                  className="w-full bg-gray-50 border border-gray-200 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-2xl px-4 py-3 text-sm text-right font-sans outline-none transition-all"
+                  dir="ltr"
+                />
+              </div>
+              <button 
+                type="submit"
+                disabled={isAddingEmail}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs transition-all shadow-md shrink-0 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isAddingEmail ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <span>➕</span>
+                )}
+                <span>مجاز ای میل شامل کریں</span>
+              </button>
+            </form>
+          </div>
+
+          {emailError && (
+            <div className="bg-red-50 border border-red-200 text-red-900 text-xs px-4 py-2.5 rounded-xl mb-4 font-bold flex items-center gap-1.5">
+              <span>⚠️</span>
+              <span>{emailError}</span>
+            </div>
+          )}
+
+          {emailSuccess && (
+            <div className="bg-emerald-50 border border-emerald-150 text-emerald-900 text-xs px-4 py-2.5 rounded-xl mb-4 font-bold flex items-center gap-1.5">
+              <span>✔️</span>
+              <span>{emailSuccess}</span>
+            </div>
+          )}
+
+          {/* List of Authorized Viewers */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-right border-collapse">
+              <thead>
+                <tr className="border-b border-gray-150 text-xs font-black text-gray-400">
+                  <th className="py-3 px-4 font-extrabold text-right">صارف ای میل</th>
+                  <th className="py-3 px-4 font-extrabold text-right">اجازت نامہ (رول)</th>
+                  <th className="py-3 px-4 font-extrabold text-right">شامل کرنے کی تاریخ</th>
+                  <th className="py-3 px-4 font-extrabold text-center">ایکشن</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {/* Always show Administrator in the list */}
+                <tr className="hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3.5 px-4 font-sans text-sm font-bold text-gray-900">noorullahsail0@gmail.com</td>
+                  <td className="py-3.5 px-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-100 rounded-full text-amber-800 text-[10px] font-black">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      سستم مینیجر / ایڈمنسٹریٹر
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-xs text-gray-400 font-sans font-medium">—</td>
+                  <td className="py-3.5 px-4 text-center">
+                    <span className="text-[10px] text-gray-400 font-bold">بنیادی اکاؤنٹ (تبدیل نہیں ہوسکتا)</span>
+                  </td>
+                </tr>
+
+                {authorizedEmails.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-xs text-gray-400 font-bold">
+                      کوئی اضافی مجاز صارف شامل نہیں ہے۔ آپ اوپر والے فارم کے ذریعے اپنے اساتذہ یا ساتھیوں کی ای میلز شامل کر سکتے ہیں۔
+                    </td>
+                  </tr>
+                ) : (
+                  authorizedEmails.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3.5 px-4 font-sans text-sm font-medium text-gray-800">{item.email}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-100 rounded-full text-emerald-800 text-[10px] font-black">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          صرف دیکھنے کی اجازت (Viewer / Read-only)
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-xs text-gray-500 font-sans font-medium">
+                        {item.addedAt ? new Date(item.addedAt).toLocaleDateString('ur-PK') : 'نامعلوم'}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          onClick={() => handleRemoveEmail(item.id)}
+                          className="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 px-3 py-1.5 rounded-xl text-[10px] font-black transition-all border border-red-100"
+                        >
+                          اجازت منسوخ کریں 🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

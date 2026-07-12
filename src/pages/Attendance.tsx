@@ -16,7 +16,7 @@ const URDU_MONTHS = [
   'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'
 ];
 
-export default function Attendance() {
+export default function Attendance({ isReadOnly = false }: { isReadOnly?: boolean }) {
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
   const [section, setSection] = useState<Section | ''>('');
   const [currentClass, setCurrentClass] = useState('');
@@ -260,12 +260,14 @@ export default function Attendance() {
                           ].map((v) => (
                             <button 
                               key={v.id} 
+                              disabled={isReadOnly}
                               onClick={() => handleStatusChange(student.id, v.id as any)} 
                               className={cn(
                                 "px-3 py-3 md:px-6 md:py-3 rounded-2xl transition-all font-black text-sm md:text-base border-2 flex-1 md:flex-initial text-center whitespace-nowrap",
                                 attendanceMap[student.id] === v.id 
                                   ? `${v.color} text-white border-transparent shadow-lg scale-105` 
-                                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                                  : "bg-white text-gray-400 border-gray-100",
+                                !isReadOnly && attendanceMap[student.id] !== v.id && "hover:border-gray-200"
                               )}
                             >
                                {v.label}
@@ -290,13 +292,15 @@ export default function Attendance() {
                 </tbody>
               </table>
             </div>
-            <button 
-              onClick={saveAttendance} 
-              disabled={saving} 
-              className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl py-5 px-16 rounded-[2rem] shadow-xl shadow-emerald-900/10 transition-all disabled:opacity-50"
-            >
-              {saving ? 'محفوظ ہو رہا ہے...' : (savedSuccess ? 'کامیابی سے محفوظ ہو گیا!' : 'حاضری محفوظ کریں')}
-            </button>
+            {!isReadOnly && (
+              <button 
+                onClick={saveAttendance} 
+                disabled={saving} 
+                className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl py-5 px-16 rounded-[2rem] shadow-xl shadow-emerald-900/10 transition-all disabled:opacity-50"
+              >
+                {saving ? 'محفوظ ہو رہا ہے...' : (savedSuccess ? 'کامیابی سے محفوظ ہو گیا!' : 'حاضری محفوظ کریں')}
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">

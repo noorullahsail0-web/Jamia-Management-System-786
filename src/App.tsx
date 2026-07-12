@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from './lib/firebase';
+import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { testFirebaseConnection } from './lib/firebase';
 import { 
   Users, 
@@ -31,6 +32,7 @@ type Tab = 'dashboard' | 'admission' | 'attendance' | 'results' | 'register';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'viewer' | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -133,9 +135,37 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (u && u.email) {
+        const emailClean = u.email.toLowerCase().trim();
+        if (emailClean === 'noorullahsail0@gmail.com') {
+          setUser(u);
+          setUserRole('admin');
+          setLoading(false);
+        } else {
+          try {
+            const docRef = doc(db, 'authorized_emails', emailClean);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              setUser(u);
+              setUserRole(docSnap.data().role || 'viewer');
+            } else {
+              setUser(u);
+              setUserRole(null);
+            }
+          } catch (error) {
+            console.error("Error verifying authorized email:", error);
+            setUser(u);
+            setUserRole(null);
+          } finally {
+            setLoading(false);
+          }
+        }
+      } else {
+        setUser(null);
+        setUserRole(null);
+        setLoading(false);
+      }
     });
     return unsubscribe;
   }, []);
@@ -213,7 +243,8 @@ export default function App() {
     );
   }
 
-  const isAdminEmail = user && user.email && user.email.toLowerCase().trim() === 'noorullahsail0@gmail.com';
+  const isAuthorized = userRole === 'admin' || userRole === 'viewer';
+  const isReadOnly = userRole === 'viewer';
 
   if (!user) {
     return (
@@ -324,7 +355,7 @@ export default function App() {
     );
   }
 
-  if (user && !isAdminEmail) {
+  if (user && !isAuthorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4" dir="rtl">
         <motion.div 
@@ -340,9 +371,9 @@ export default function App() {
             <AlertTriangle className="w-3.5 h-3.5" />
             <span>غیر مجاز رسائی</span>
           </div>
-          <h1 className="text-2xl font-black text-gray-900 mb-3 font-nastaleeq leading-tight">سستم تک رسائی کی اجازت نہیں ہے</h1>
+          <h1 className="text-2xl font-black text-gray-900 mb-3 font-nastaleeq leading-tight">سسٹم تک رسائی کی اجازت نہیں ہے</h1>
           <p className="text-sm font-bold text-gray-600 mb-6 leading-relaxed font-urdu">
-            آپ کا لاگ ان کردہ ای میل ایڈریس <span className="font-mono text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100">{user.email}</span> اس ڈیجیٹل سسٹم پر ایڈمنسٹریٹر الیکٹرانک میل پتے (<span className="font-mono text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">noorullahsail0@gmail.com</span>) سے میل نہیں کھاتا۔
+            آپ کا لاگ ان کردہ ای میل ایڈریس <span className="font-mono text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100">{user.email}</span> اس ڈیجیٹل سسٹم پر مجاز نہیں ہے۔ اگر آپ مدرسے کے استاد یا ساتھی ہیں تو براہِ کرم ایڈمنسٹریٹر نوراللہ صاحب سے رابطہ کریں تاکہ وہ آپ کا ای میل پتا مجاز فہرست (Authorized List) میں شامل کر سکیں۔
           </p>
           <div className="space-y-3 font-urdu">
             <button
@@ -530,11 +561,11 @@ export default function App() {
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'dashboard' && <Dashboard setActiveTab={setActiveTab as (tab: string) => void} />}
-              {activeTab === 'admission' && <Admission />}
-              {activeTab === 'attendance' && <Attendance />}
-              {activeTab === 'results' && <Results />}
-              {activeTab === 'register' && <DakhilKharij />}
+              {activeTab === 'dashboard' && <Dashboard setActiveTab={setActiveTab as (tab: string) => void} isReadOnly={isReadOnly} userRole={userRole} />}
+              {activeTab === 'admission' && <Admission isReadOnly={isReadOnly} />}
+              {activeTab === 'attendance' && <Attendance isReadOnly={isReadOnly} />}
+              {activeTab === 'results' && <Results isReadOnly={isReadOnly} />}
+              {activeTab === 'register' && <DakhilKharij isReadOnly={isReadOnly} />}
             </motion.div>
           </AnimatePresence>
         </div>
