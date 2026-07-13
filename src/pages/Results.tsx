@@ -331,11 +331,16 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
       const studentsMap: Record<string, any> = {};
       sSnap.forEach(d => studentsMap[d.id] = d.data());
 
-      setResultsList(results.map(r => ({
-        ...r,
-        studentName: studentsMap[r.studentId]?.name || 'نامعلوم',
-        fatherName: studentsMap[r.studentId]?.fatherName || '-'
-      })).sort((a: any, b: any) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true })));
+      // Only include results for students who belong to the selected section and class
+      const filteredResults = results
+        .filter(r => studentsMap[r.studentId] !== undefined)
+        .map(r => ({
+          ...r,
+          studentName: studentsMap[r.studentId].name,
+          fatherName: studentsMap[r.studentId].fatherName || '-'
+        }));
+
+      setResultsList(filteredResults.sort((a: any, b: any) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true })));
     } catch (e: any) {
       console.error(e);
       if (e.code === 'unavailable') {
@@ -1179,12 +1184,18 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                     <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">درجہ:</span>
                     <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
                       <span className="font-black text-lg text-emerald-900 leading-none inline-block whitespace-nowrap">
-                        {studentAllResults[ExamType.ANNUAL]?.class || studentAllResults[ExamType.HALF_YEARLY]?.class || studentAllResults[ExamType.QUARTERLY]?.class || student.currentClass} ({student.section})
+                        {(() => {
+                          const cls = studentAllResults[ExamType.ANNUAL]?.class || studentAllResults[ExamType.HALF_YEARLY]?.class || studentAllResults[ExamType.QUARTERLY]?.class || student.currentClass || '';
+                          const sect = student.section || '';
+                          const formattedCls = cls.replace(/^درجہ\s+/, '');
+                          const formattedSect = sect.replace(/\s*درس\s+نظامی/, '').trim();
+                          return `${formattedCls} (${formattedSect})`;
+                        })()}
                       </span>
                     </div>
                   </div>
                   <div className="flex gap-2 items-end">
-                    <span className="text-emerald-900 whitespace-nowrap font-black text-base font-mono mb-1">Reg No:</span>
+                    <span className="text-emerald-900 whitespace-nowrap font-black text-base font-mono mb-1"></span>
                     <div className="flex-1 text-center border-b-2 border-emerald-900/30 pb-0.5">
                       <span className="font-mono font-black text-xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.regNo}</span>
                     </div>
