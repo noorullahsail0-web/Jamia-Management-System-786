@@ -21,6 +21,10 @@
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then((reg) => {
               console.log('Service Worker Registered Successfully!', reg.scope);
+              // Force checking for updates immediately on load to detect changes fast
+              if (reg.update) {
+                reg.update().catch((err) => console.log('SW update check failed:', err));
+              }
             })
             .catch((err) => {
               console.log('Service Worker registration bypassed or failed (expected in sandboxed preview iframe):', err);
