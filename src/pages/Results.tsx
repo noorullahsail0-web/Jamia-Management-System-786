@@ -1110,49 +1110,30 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                           <span>طریقہ نمبر 1: سکرین شاٹ/تصویر کاپی کرنا (آسان اور تیز ترین)</span>
                         </p>
                         <p className="text-xs text-sky-900 leading-normal">
-                          فائل ڈاؤن لوڈ کرنے اور گیلری یا موبائل کے فولڈرز میں ڈھونڈنے کی کوئی ضرورت نہیں!
+                          فائل ڈاؤن لوڈ کرنے اور گیلری یا موبائل کے فولڈرز میں ڈھونڈنے کی کوئی ضرورت نہیں۔ "رپورٹ کارڈ تصویر کاپی کریں" پر کلک کریں اور واٹس ایپ چیٹ میں جا کر پیسٹ (Paste) کر دیں۔
                         </p>
-                        <ol className="list-decimal list-inside text-xs text-sky-900 space-y-1">
-                          <li>نیلے بٹن <strong>"رپورٹ کارڈ تصویر کاپی کریں"</strong> پر کلک کریں۔ تصویر خودکار کاپی ہو جائے گی۔</li>
-                          <li>سبز بٹن <strong>"واٹس ایپ اطلاع"</strong> پر کلک کریں۔ چیٹ کھل جائے گی۔</li>
-                          <li>چیٹ میں جا کر صرف <strong>پیسٹ (Paste / Ctrl+V)</strong> کریں اور بھیج دیں!</li>
-                        </ol>
                       </div>
 
-                      <div className="bg-amber-100/50 border border-amber-200 p-4 rounded-xl space-y-2">
-                        <p className="font-bold text-amber-950 text-base flex items-center gap-1">
-                          <span>📄</span>
-                          <span>طریقہ نمبر 2: پی ڈی ایف فائل اٹیچ کرنا</span>
+                      <div className="bg-teal-50 border border-teal-100 p-4 rounded-xl space-y-2">
+                        <p className="font-bold text-teal-950 text-base flex items-center gap-1">
+                          <span className="text-lg">📄</span>
+                          <span>طریقہ نمبر 2: پی ڈی ایف یا تصویر شیئر کرنا</span>
                         </p>
-                        <p className="text-xs text-amber-900 leading-normal">
-                          اگر آپ اصل پی ڈی ایف دستاویز اٹیچ کر کے بھیجنا چاہتے ہیں:
+                        <p className="text-xs text-teal-900 leading-normal">
+                          "پی ڈی ایف" یا "تصویر ڈاؤن لوڈ کریں" پر کلک کریں، اور پھر گیلری یا فائل مینیجر سے واٹس ایپ پر شیئر کریں۔
                         </p>
-                        <ol className="list-decimal list-inside text-xs text-amber-900 space-y-1">
-                          <li>سرخ بٹن <strong>"پی ڈی ایف"</strong> پر کلک کر کے فائل ڈاؤن لوڈ کر لیں۔</li>
-                          <li>سبز بٹن <strong>"واٹس ایپ اطلاع"</strong> پر کلک کریں۔ چیٹ کھل جائے گی۔</li>
-                          <li>چیٹ میں اٹیچمنٹ والے آئیکن (📎) پر کلک کر کے ڈاؤن لوڈز سے پی ڈی ایف فائل بھیج دیں۔</li>
-                        </ol>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Scroll notice for mobile screen */}
-              <div className="w-full no-print px-4 py-2 flex flex-col items-center justify-center lg:hidden bg-emerald-50/50 border-y border-gray-100 mb-4 rounded-xl">
-                <p className="text-xs font-bold text-emerald-800 flex items-center gap-1 font-urdu">
-                  <span>← رزلٹ کارڈ مکمل دیکھنے کے لیے دائیں بائیں اسکرول کریں →</span>
-                </p>
-              </div>
-
-              {/* Report Card content wrapper for PDF generation */}
-              <div className="overflow-x-auto w-full py-4 scroller-style">
-                <div 
-                  ref={individualRef} 
-                  className="bg-white mx-auto relative overflow-hidden flex flex-col px-8 py-4 border-2 border-emerald-900 font-urdu" 
-                  style={{ width: '15.5cm', height: '21.5cm' }}
-                  id="report-card-print"
-                >
+              <div 
+                ref={individualRef} 
+                className="bg-white mx-auto relative overflow-hidden flex flex-col px-8 py-4 border-2 border-black font-urdu" 
+                style={{ width: '15.5cm', height: '21.5cm' }}
+                id="report-card-print"
+              >
                 {/* Watermark Logo */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
                   <img src={logo} alt="Watermark" className="w-[80%] object-contain" />
@@ -1161,7 +1142,7 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                 {/* Header */}
                 <div className="relative text-center mb-1 pt-1">
                   <div className="flex flex-col items-center gap-1">
-                    <h1 className="text-3xl font-black text-emerald-955">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                    <h1 className="text-3xl font-black text-black">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
                     <p className="text-xl font-bold font-nastaleeq text-black leading-tight">سالانہ تعلیمی رپورٹ - {selectedYear}ء</p>
                   </div>
                 </div>
@@ -1169,21 +1150,21 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                 {/* Student Info Grid */}
                 <div className="relative grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
                   <div className="flex gap-2 items-end">
-                    <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">طالب علم:</span>
-                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
-                      <span className="font-black text-2xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.name}</span>
+                    <span className="text-black whitespace-nowrap font-black text-base mb-1">طالب علم:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-0.5">
+                      <span className="font-black text-2xl text-black leading-none inline-block whitespace-nowrap">{student.name}</span>
                     </div>
                   </div>
                   <div className="flex gap-2 items-end">
-                    <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">ولدیت:</span>
-                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
-                      <span className="font-black text-2xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.fatherName}</span>
+                    <span className="text-black whitespace-nowrap font-black text-base mb-1">ولدیت:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-0.5">
+                      <span className="font-black text-2xl text-black leading-none inline-block whitespace-nowrap">{student.fatherName}</span>
                     </div>
                   </div>
                   <div className="flex gap-2 items-end">
-                    <span className="text-emerald-900 whitespace-nowrap font-black text-base mb-1">درجہ:</span>
-                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-emerald-900/30 pb-0.5">
-                      <span className="font-black text-lg text-emerald-900 leading-none inline-block whitespace-nowrap">
+                    <span className="text-black whitespace-nowrap font-black text-base mb-1">درجہ:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-0.5">
+                      <span className="font-black text-lg text-black leading-none inline-block whitespace-nowrap">
                         {(() => {
                           const cls = studentAllResults[ExamType.ANNUAL]?.class || studentAllResults[ExamType.HALF_YEARLY]?.class || studentAllResults[ExamType.QUARTERLY]?.class || student.currentClass || '';
                           const sect = student.section || '';
@@ -1195,16 +1176,16 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                     </div>
                   </div>
                   <div className="flex gap-2 items-end">
-                    <span className="text-emerald-900 whitespace-nowrap font-black text-base font-mono mb-1"></span>
-                    <div className="flex-1 text-center border-b-2 border-emerald-900/30 pb-0.5">
-                      <span className="font-mono font-black text-xl text-gray-900 leading-none inline-block whitespace-nowrap">{student.regNo}</span>
+                    <span className="text-black whitespace-nowrap font-black text-base mb-1">رقم التسجیل:</span>
+                    <div className="flex-1 text-left pl-2 border-b-2 border-black/30 pb-0.5">
+                      <span className="font-mono font-black text-xl text-black leading-none inline-block whitespace-nowrap relative -left-3">{student.regNo}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Main Table */}
                 <div className="relative flex-1">
-                  <table className="w-full border-collapse border-2 border-emerald-900 text-center table-fixed">
+                  <table className="w-full border-collapse border-2 border-black text-center table-fixed">
                     <thead>
                       <tr className="bg-emerald-900 text-white h-12">
                         <th className="border border-white/10 font-black text-xl w-[35%] text-center align-top pt-2">مضامین</th>
@@ -1222,12 +1203,12 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                           const a = studentAllResults[ExamType.ANNUAL]?.subjects?.[sub] ?? '-';
                           const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
                           return (
-                            <tr key={idx} className="h-11 hover:bg-emerald-50/10">
-                              <td className="border border-emerald-900/20 font-bold text-emerald-950 text-center align-top pt-1 whitespace-nowrap text-lg">{sub}</td>
-                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{q}</td>
-                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{h}</td>
-                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{a}</td>
-                              <td className="border border-emerald-900/20 font-black text-black text-xl text-center align-top pt-1">{total || '-'}</td>
+                            <tr key={idx} className="h-11 hover:bg-neutral-50">
+                              <td className="border border-black/20 font-bold text-black text-center align-top pt-1 whitespace-nowrap text-lg">{sub}</td>
+                              <td className="border border-black/20 text-black text-center font-bold align-top pt-2 text-base">{q}</td>
+                              <td className="border border-black/20 text-black text-center font-bold align-top pt-2 text-base">{h}</td>
+                              <td className="border border-black/20 text-black text-center font-bold align-top pt-2 text-base">{a}</td>
+                              <td className="border border-black/20 font-black text-black text-xl text-center align-top pt-1">{total || '-'}</td>
                             </tr>
                           );
                         })
@@ -1240,23 +1221,23 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                           const a = studentAllResults[ExamType.ANNUAL]?.hifzBreakdown?.[key] ?? '-';
                           const total = (Number(q) || 0) + (Number(h) || 0) + (Number(a) || 0);
                           return (
-                            <tr key={idx} className="h-11 hover:bg-emerald-50/10">
-                              <td className="border border-emerald-900/20 font-bold text-emerald-950 text-center align-top pt-1 whitespace-nowrap text-lg">{sub}</td>
-                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{q}</td>
-                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{h}</td>
-                              <td className="border border-emerald-900/20 text-gray-700 text-center font-bold align-top pt-2 text-base">{a}</td>
-                              <td className="border border-emerald-900/20 font-black text-black text-xl text-center align-top pt-1">{total || '-'}</td>
+                            <tr key={idx} className="h-11 hover:bg-neutral-50">
+                              <td className="border border-black/20 font-bold text-black text-center align-top pt-1 whitespace-nowrap text-lg">{sub}</td>
+                              <td className="border border-black/20 text-black text-center font-bold align-top pt-2 text-base">{q}</td>
+                              <td className="border border-black/20 text-black text-center font-bold align-top pt-2 text-base">{h}</td>
+                              <td className="border border-black/20 text-black text-center font-bold align-top pt-2 text-base">{a}</td>
+                              <td className="border border-black/20 font-black text-black text-xl text-center align-top pt-1">{total || '-'}</td>
                             </tr>
                           );
                         })
                       )}
                       {/* Total Marks Row */}
-                      <tr className="bg-emerald-50 text-emerald-950 h-14 border-t-2 border-emerald-900">
-                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">کل حاصل کردہ نمبرات</td>
-                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
-                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
-                        <td className="border border-emerald-900/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.ANNUAL]?.totalMarks || '0'}</td>
-                        <td className="border border-emerald-900/30 text-emerald-950 font-black text-2xl text-center align-top pt-1.5 italic bg-emerald-100/30">
+                      <tr className="bg-neutral-50 text-black h-14 border-t-2 border-black">
+                        <td className="border border-black/20 font-black text-lg text-center align-top pt-2.5">کل حاصل کردہ نمبرات</td>
+                        <td className="border border-black/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.QUARTERLY]?.totalMarks || '0'}</td>
+                        <td className="border border-black/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.HALF_YEARLY]?.totalMarks || '0'}</td>
+                        <td className="border border-black/20 font-black text-lg text-center align-top pt-2.5">{studentAllResults[ExamType.ANNUAL]?.totalMarks || '0'}</td>
+                        <td className="border border-black/30 text-black font-black text-2xl text-center align-top pt-1.5 italic bg-neutral-100/30">
                           {(Number(studentAllResults[ExamType.QUARTERLY]?.totalMarks) || 0) + 
                            (Number(studentAllResults[ExamType.HALF_YEARLY]?.totalMarks) || 0) + 
                            (Number(studentAllResults[ExamType.ANNUAL]?.totalMarks) || 0)}
@@ -1269,12 +1250,12 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                 {/* Summary Section */}
                 <div className="relative mt-2 px-6">
                   {/* Grid for individual exams */}
-                  <div className="grid grid-cols-3 gap-2 border-b border-emerald-900/10 pb-2 mb-2 text-center text-sm">
+                  <div className="grid grid-cols-3 gap-2 border-b border-black/10 pb-2 mb-2 text-center text-sm">
                     {/* Quarterly */}
-                    <div className="flex flex-col items-center bg-emerald-50/40 py-1 px-2 rounded-lg border border-emerald-900/5">
-                      <span className="font-bold text-emerald-800 text-xs">سہ ماہی رزلٹ</span>
+                    <div className="flex flex-col items-center bg-neutral-50 py-1 px-2 rounded-lg border border-black/5">
+                      <span className="font-bold text-black text-xs">سہ ماہی رزلٹ</span>
                       {studentAllResults[ExamType.QUARTERLY] && Number(studentAllResults[ExamType.QUARTERLY].totalMarks) > 0 ? (
-                        <span className="font-black text-emerald-950 mt-0.5 text-xs">
+                        <span className="font-black text-black mt-0.5 text-xs">
                           {studentAllResults[ExamType.QUARTERLY].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.QUARTERLY].percentage, 100)})
                         </span>
                       ) : (
@@ -1283,10 +1264,10 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                     </div>
 
                     {/* Half Yearly */}
-                    <div className="flex flex-col items-center bg-emerald-50/40 py-1 px-2 rounded-lg border border-emerald-900/5">
-                      <span className="font-bold text-emerald-800 text-xs">شش ماہی رزلٹ</span>
+                    <div className="flex flex-col items-center bg-neutral-50 py-1 px-2 rounded-lg border border-black/5">
+                      <span className="font-bold text-black text-xs">شش ماہی رزلٹ</span>
                       {studentAllResults[ExamType.HALF_YEARLY] && Number(studentAllResults[ExamType.HALF_YEARLY].totalMarks) > 0 ? (
-                        <span className="font-black text-emerald-950 mt-0.5 text-xs">
+                        <span className="font-black text-black mt-0.5 text-xs">
                           {studentAllResults[ExamType.HALF_YEARLY].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.HALF_YEARLY].percentage, 100)})
                         </span>
                       ) : (
@@ -1295,10 +1276,10 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                     </div>
 
                     {/* Annual */}
-                    <div className="flex flex-col items-center bg-emerald-50/40 py-1 px-2 rounded-lg border border-emerald-900/5">
-                      <span className="font-bold text-emerald-800 text-xs">سالانہ رزلٹ</span>
+                    <div className="flex flex-col items-center bg-neutral-50 py-1 px-2 rounded-lg border border-black/5">
+                      <span className="font-bold text-black text-xs">سالانہ رزلٹ</span>
                       {studentAllResults[ExamType.ANNUAL] && Number(studentAllResults[ExamType.ANNUAL].totalMarks) > 0 ? (
-                        <span className="font-black text-emerald-950 mt-0.5 text-xs">
+                        <span className="font-black text-black mt-0.5 text-xs">
                           {studentAllResults[ExamType.ANNUAL].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.ANNUAL].percentage, 100)})
                         </span>
                       ) : (
@@ -1324,14 +1305,14 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                     return (
                       <div className="flex justify-between items-center px-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-emerald-900">مجموعی فیصد:</span>
-                          <span className="text-base font-black text-emerald-950 italic">
+                          <span className="text-sm font-bold text-black">مجموعی فیصد:</span>
+                          <span className="text-base font-black text-black italic">
                             {enteredExams.length > 0 ? `${overallPercentage.toFixed(1)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-emerald-900">مجموعی کیفیت:</span>
-                          <span className="text-lg font-black text-emerald-950">
+                          <span className="text-sm font-bold text-black">مجموعی کیفیت:</span>
+                          <span className="text-lg font-black text-black">
                             {enteredExams.length > 0 ? overallGrade : '-'}
                           </span>
                         </div>
@@ -1343,15 +1324,14 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                 {/* Signatures */}
                 <div className="relative mt-auto flex justify-between px-8 pt-4 pb-12">
                   <div className="flex items-end gap-2">
-                    <p className="font-nastaleeq font-black text-emerald-900 text-2xl whitespace-nowrap">دستخط ناظم</p>
-                    <div className="w-32 border-b-2 border-emerald-900/30 pb-0.5 mb-2"></div>
+                    <p className="font-nastaleeq font-black text-black text-2xl whitespace-nowrap">دستخط ناظم</p>
+                    <div className="w-32 border-b-2 border-black/30 pb-0.5 mb-2"></div>
                   </div>
                   <div className="flex items-end gap-2">
-                    <p className="font-nastaleeq font-black text-emerald-900 text-2xl whitespace-nowrap">دستخط مہتمم</p>
-                    <div className="w-32 border-b-2 border-emerald-900/30 pb-0.5 mb-2"></div>
+                    <p className="font-nastaleeq font-black text-black text-2xl whitespace-nowrap">دستخط مہتمم</p>
+                    <div className="w-32 border-b-2 border-black/30 pb-0.5 mb-2"></div>
                   </div>
                 </div>
-              </div>
               </div>
             </motion.div>
           )}
