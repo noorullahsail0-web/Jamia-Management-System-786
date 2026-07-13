@@ -15,7 +15,8 @@ import {
   BookCopy,
   WifiOff,
   AlertTriangle,
-  RefreshCcw
+  RefreshCcw,
+  MoreVertical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -30,6 +31,72 @@ import DakhilKharij from './pages/DakhilKharij';
 
 type Tab = 'dashboard' | 'admission' | 'attendance' | 'results' | 'register';
 
+function AppMenuDropdown({ onUpdate, darkTheme = false }: { onUpdate: () => void; darkTheme?: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = () => setIsOpen(false);
+    window.addEventListener('click', handleClose);
+    return () => window.removeEventListener('click', handleClose);
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block text-right" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "p-2 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center border",
+          darkTheme 
+            ? "text-emerald-100 hover:bg-white/10 hover:text-white border-transparent active:scale-95" 
+            : "text-gray-600 hover:bg-gray-100 border-transparent active:scale-95"
+        )}
+        title="سسٹم مینیو"
+      >
+        <MoreVertical className="w-5 h-5" />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            className={cn(
+              "absolute left-0 mt-2 w-52 rounded-2xl shadow-2xl border z-[100] p-1.5 backdrop-blur-md overflow-hidden",
+              darkTheme 
+                ? "bg-[#0b3d32]/95 border-emerald-800/50 text-white shadow-black/45" 
+                : "bg-white/95 border-gray-100 text-gray-900 shadow-gray-200"
+            )}
+          >
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                onUpdate();
+              }}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black text-right transition-all cursor-pointer",
+                darkTheme 
+                  ? "hover:bg-white/10 text-emerald-100 hover:text-white" 
+                  : "hover:bg-gray-50 text-gray-700 hover:text-emerald-600"
+              )}
+            >
+              <RefreshCcw className="w-4 h-4 text-amber-500 animate-spin" />
+              <span>ایپ اپڈیٹ کریں (Update App)</span>
+            </button>
+            
+            <div className={cn("h-[1px] my-1", darkTheme ? "bg-white/5" : "bg-gray-100")} />
+            
+            <div className={cn("px-3.5 py-1.5 text-[10px] leading-tight font-medium select-none", darkTheme ? "text-emerald-400" : "text-gray-400")}>
+              جامعہ سسٹم v2.0.0
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<'admin' | 'viewer' | null>(null);
@@ -41,6 +108,42 @@ export default function App() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isIframe, setIsIframe] = useState(false);
+  const [isUpdatingApp, setIsUpdatingApp] = useState(false);
+
+  const handleForceUpdateApp = async () => {
+    setIsUpdatingApp(true);
+    try {
+      console.log('Force updating PWA...');
+      
+      // 1. Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      
+      // 2. Clear all cache storages
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        for (const cacheName of cacheNames) {
+          await caches.delete(cacheName);
+        }
+      }
+      
+      // 3. Clear session storage
+      sessionStorage.clear();
+      
+      // Short delay for visual feedback
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      // 4. Force reload from server
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating app:', error);
+      setIsUpdatingApp(false);
+    }
+  };
   
   // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -420,14 +523,19 @@ export default function App() {
         )}
       >
         <div className="p-3 flex flex-col h-full overflow-hidden">
-          <div className="flex items-center gap-3 mb-6 mt-1 pb-4 border-b border-white/5">
-            <div className="bg-white p-1.5 rounded-xl shrink-0 shadow-lg shadow-black/20">
-              <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+          <div className="flex items-center justify-between mb-6 mt-1 pb-4 border-b border-white/5">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="bg-white p-1.5 rounded-xl shrink-0 shadow-lg shadow-black/20">
+                <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+              </div>
+              <div className={cn("transition-all duration-300 origin-right overflow-hidden", !isSidebarOpen && "lg:w-0 lg:opacity-0")}>
+                <h2 className="text-xs font-black whitespace-nowrap leading-tight text-emerald-50">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h2>
+                <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider leading-none mt-0.5">Management System</p>
+              </div>
             </div>
-            <div className={cn("transition-all duration-300 origin-right overflow-hidden", !isSidebarOpen && "lg:w-0 lg:opacity-0")}>
-              <h2 className="text-xs font-black whitespace-nowrap leading-tight text-emerald-50">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h2>
-              <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider leading-none mt-0.5">Management System</p>
-            </div>
+            {isSidebarOpen && (
+              <AppMenuDropdown onUpdate={handleForceUpdateApp} darkTheme={true} />
+            )}
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-1 pl-1 text-right">
@@ -516,14 +624,17 @@ export default function App() {
         <header className="lg:hidden bg-white border-b px-4 py-4 sticky top-0 z-40 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
             <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-            <h1 className="text-lg font-bold">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+            <h1 className="text-lg font-bold text-emerald-950 font-nastaleeq">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
           </div>
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-          >
-            {isSidebarOpen ? <X /> : <Menu />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <AppMenuDropdown onUpdate={handleForceUpdateApp} darkTheme={false} />
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
+            >
+              {isSidebarOpen ? <X /> : <Menu />}
+            </button>
+          </div>
         </header>
 
         <div className="p-4 lg:p-8 w-full">
@@ -691,6 +802,41 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modern Update Overlay with animation */}
+      <AnimatePresence>
+        {isUpdatingApp && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[#022c22]/98 z-[9999] flex flex-col items-center justify-center text-white font-urdu p-4"
+          >
+            <div className="absolute inset-0 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="relative z-10 flex flex-col items-center text-center max-w-sm">
+              <div className="mb-6 relative">
+                <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse"></div>
+                <img 
+                  src={logo} 
+                  alt="Logo" 
+                  className="w-24 h-24 relative z-10 object-contain bg-white p-3 rounded-full border-2 border-amber-400 shadow-2xl" 
+                />
+              </div>
+              <h2 className="text-2xl font-black font-nastaleeq text-amber-100 mb-2">جامعہ سسٹم اپڈیٹ ہو رہا ہے...</h2>
+              <p className="text-xs text-emerald-300 mb-6 font-sans">Updating Digital Management System</p>
+              
+              <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+              
+              <p className="text-sm text-emerald-200/90 font-black leading-relaxed">
+                جدید ترین تعلیمی فائلیں، پرچوں کے نئے کالم اور نیا مدرسہ لوگو لوڈ کیا جا رہا ہے۔
+              </p>
+              <p className="text-xs text-emerald-300/70 font-bold leading-relaxed mt-2">
+                براہِ کرم چند سیکنڈ انتظار کریں، سسٹم خودکار طور پر ری اسٹارٹ ہوگا۔
+              </p>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
