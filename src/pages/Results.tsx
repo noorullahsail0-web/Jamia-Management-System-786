@@ -1188,11 +1188,11 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                   <table className="w-full border-collapse border-2 border-black text-center table-fixed">
                     <thead>
                       <tr className="bg-emerald-900 text-white h-12">
-                        <th className="border border-white/10 font-black text-xl w-[35%] text-center align-middle">مضامین</th>
-                        <th className="border border-white/10 font-black text-base text-center align-middle">سہ ماہی</th>
-                        <th className="border border-white/10 font-black text-base text-center align-middle">شش ماہی</th>
-                        <th className="border border-white/10 font-black text-base text-center align-middle">سالانہ</th>
-                        <th className="border border-white/10 font-black text-xl text-center align-middle">مجموعہ</th>
+                        <th className="border border-white/10 font-black text-xl w-[35%] text-center align-top pt-[6px]">مضامین</th>
+                        <th className="border border-white/10 font-black text-base text-center align-top pt-[9px]">سہ ماہی</th>
+                        <th className="border border-white/10 font-black text-base text-center align-top pt-[9px]">شش ماہی</th>
+                        <th className="border border-white/10 font-black text-base text-center align-top pt-[9px]">سالانہ</th>
+                        <th className="border border-white/10 font-black text-xl text-center align-top pt-[6px]">مجموعہ</th>
                       </tr>
                     </thead>
                     <tbody>
