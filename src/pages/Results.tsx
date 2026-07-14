@@ -1142,29 +1142,29 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                 {/* Header */}
                 <div className="relative text-center mb-1 pt-1">
                   <div className="flex flex-col items-center gap-1">
-                    <h1 className="text-3xl font-black text-black">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
-                    <p className="text-xl font-bold font-nastaleeq text-black leading-tight">سالانہ تعلیمی رپورٹ - {selectedYear}ء</p>
+                    <h1 className="text-3xl font-black text-black leading-normal">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
+                    <p className="text-xl font-bold font-nastaleeq text-black leading-normal">سالانہ تعلیمی رپورٹ - {selectedYear}ء</p>
                   </div>
                 </div>
 
                 {/* Student Info Grid */}
                 <div className="relative grid grid-cols-2 gap-x-6 gap-y-2 mb-2">
-                  <div className="flex gap-2 items-end">
-                    <span className="text-black whitespace-nowrap font-black text-base mb-1">طالب علم:</span>
-                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-0.5">
-                      <span className="font-black text-2xl text-black leading-none inline-block whitespace-nowrap">{student.name}</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-black whitespace-nowrap font-black text-base">طالب علم:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-1">
+                      <span className="font-black text-2xl text-black leading-normal inline-block whitespace-nowrap">{student.name}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 items-end">
-                    <span className="text-black whitespace-nowrap font-black text-base mb-1">ولدیت:</span>
-                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-0.5">
-                      <span className="font-black text-2xl text-black leading-none inline-block whitespace-nowrap">{student.fatherName}</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-black whitespace-nowrap font-black text-base">ولدیت:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-1">
+                      <span className="font-black text-2xl text-black leading-normal inline-block whitespace-nowrap">{student.fatherName}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 items-end">
-                    <span className="text-black whitespace-nowrap font-black text-base mb-1">درجہ:</span>
-                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-0.5">
-                      <span className="font-black text-lg text-black leading-none inline-block whitespace-nowrap">
+                  <div className="flex gap-2 items-center">
+                    <span className="text-black whitespace-nowrap font-black text-base">درجہ:</span>
+                    <div className="flex-1 text-center font-nastaleeq border-b-2 border-black/30 pb-1">
+                      <span className="font-black text-lg text-black leading-normal inline-block whitespace-nowrap">
                         {(() => {
                           const cls = studentAllResults[ExamType.ANNUAL]?.class || studentAllResults[ExamType.HALF_YEARLY]?.class || studentAllResults[ExamType.QUARTERLY]?.class || student.currentClass || '';
                           const sect = student.section || '';
@@ -1175,10 +1175,10 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2 items-end">
-                    <span className="text-black whitespace-nowrap font-black text-base mb-1">رقم التسجیل:</span>
-                    <div className="flex-1 text-left pl-2 border-b-2 border-black/30 pb-0.5">
-                      <span className="font-mono font-black text-xl text-black leading-none inline-block whitespace-nowrap relative -left-3">{student.regNo}</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-black whitespace-nowrap font-black text-base">رقم التسجیل:</span>
+                    <div className="flex-1 text-left pl-2 border-b-2 border-black/30 pb-1">
+                      <span className="font-mono font-black text-xl text-black leading-normal inline-block whitespace-nowrap relative -left-3">{student.regNo}</span>
                     </div>
                   </div>
                 </div>
@@ -1188,11 +1188,11 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                   <table className="w-full border-collapse border-2 border-black text-center table-fixed">
                     <thead>
                       <tr className="bg-emerald-900 text-white h-12">
-                        <th className="border border-white/10 font-black text-xl w-[35%] text-center align-top pt-2">مضامین</th>
-                        <th className="border border-white/10 font-black text-base text-center align-top pt-3">سہ ماہی</th>
-                        <th className="border border-white/10 font-black text-base text-center align-top pt-3">شش ماہی</th>
-                        <th className="border border-white/10 font-black text-base text-center align-top pt-3">سالانہ</th>
-                        <th className="border border-white/10 font-black text-xl text-center align-top pt-2">مجموعہ</th>
+                        <th className="border border-white/10 font-black text-xl w-[35%] text-center align-middle">مضامین</th>
+                        <th className="border border-white/10 font-black text-base text-center align-middle">سہ ماہی</th>
+                        <th className="border border-white/10 font-black text-base text-center align-middle">شش ماہی</th>
+                        <th className="border border-white/10 font-black text-base text-center align-middle">سالانہ</th>
+                        <th className="border border-white/10 font-black text-xl text-center align-middle">مجموعہ</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1250,40 +1250,40 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                 {/* Summary Section */}
                 <div className="relative mt-2 px-6">
                   {/* Grid for individual exams */}
-                  <div className="grid grid-cols-3 gap-2 border-b border-black/10 pb-2 mb-2 text-center text-sm">
+                  <div className="grid grid-cols-3 gap-2 border-b border-black/10 pb-2 mb-2 text-center">
                     {/* Quarterly */}
-                    <div className="flex flex-col items-center bg-neutral-50 py-1 px-2 rounded-lg border border-black/5">
-                      <span className="font-bold text-black text-xs">سہ ماہی رزلٹ</span>
+                    <div className="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg border border-black/10 shadow-sm" style={{ backgroundColor: '#fdfdfd' }}>
+                      <span className="font-bold text-black text-[11px] leading-normal">سہ ماہی رزلٹ</span>
                       {studentAllResults[ExamType.QUARTERLY] && Number(studentAllResults[ExamType.QUARTERLY].totalMarks) > 0 ? (
-                        <span className="font-black text-black mt-0.5 text-xs">
+                        <span className="font-black text-black mt-0.5 text-[11px] leading-normal whitespace-nowrap">
                           {studentAllResults[ExamType.QUARTERLY].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.QUARTERLY].percentage, 100)})
                         </span>
                       ) : (
-                        <span className="text-gray-400 mt-0.5 text-xs">-</span>
+                        <span className="text-gray-400 mt-0.5 text-[11px]">-</span>
                       )}
                     </div>
 
                     {/* Half Yearly */}
-                    <div className="flex flex-col items-center bg-neutral-50 py-1 px-2 rounded-lg border border-black/5">
-                      <span className="font-bold text-black text-xs">شش ماہی رزلٹ</span>
+                    <div className="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg border border-black/10 shadow-sm" style={{ backgroundColor: '#fdfdfd' }}>
+                      <span className="font-bold text-black text-[11px] leading-normal">شش ماہی رزلٹ</span>
                       {studentAllResults[ExamType.HALF_YEARLY] && Number(studentAllResults[ExamType.HALF_YEARLY].totalMarks) > 0 ? (
-                        <span className="font-black text-black mt-0.5 text-xs">
+                        <span className="font-black text-black mt-0.5 text-[11px] leading-normal whitespace-nowrap">
                           {studentAllResults[ExamType.HALF_YEARLY].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.HALF_YEARLY].percentage, 100)})
                         </span>
                       ) : (
-                        <span className="text-gray-400 mt-0.5 text-xs">-</span>
+                        <span className="text-gray-400 mt-0.5 text-[11px]">-</span>
                       )}
                     </div>
 
                     {/* Annual */}
-                    <div className="flex flex-col items-center bg-neutral-50 py-1 px-2 rounded-lg border border-black/5">
-                      <span className="font-bold text-black text-xs">سالانہ رزلٹ</span>
+                    <div className="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg border border-black/10 shadow-sm" style={{ backgroundColor: '#fdfdfd' }}>
+                      <span className="font-bold text-black text-[11px] leading-normal">سالانہ رزلٹ</span>
                       {studentAllResults[ExamType.ANNUAL] && Number(studentAllResults[ExamType.ANNUAL].totalMarks) > 0 ? (
-                        <span className="font-black text-black mt-0.5 text-xs">
+                        <span className="font-black text-black mt-0.5 text-[11px] leading-normal whitespace-nowrap">
                           {studentAllResults[ExamType.ANNUAL].percentage.toFixed(1)}% ({calculateGrade(studentAllResults[ExamType.ANNUAL].percentage, 100)})
                         </span>
                       ) : (
-                        <span className="text-gray-400 mt-0.5 text-xs">-</span>
+                        <span className="text-gray-400 mt-0.5 text-[11px]">-</span>
                       )}
                     </div>
                   </div>
@@ -1305,14 +1305,14 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                     return (
                       <div className="flex justify-between items-center px-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-black">مجموعی فیصد:</span>
-                          <span className="text-base font-black text-black italic">
+                          <span className="text-sm font-bold text-black leading-normal">مجموعی فیصد:</span>
+                          <span className="text-base font-black text-black italic leading-normal">
                             {enteredExams.length > 0 ? `${overallPercentage.toFixed(1)}%` : '-'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-black">مجموعی کیفیت:</span>
-                          <span className="text-lg font-black text-black">
+                          <span className="text-sm font-bold text-black leading-normal">مجموعی کیفیت:</span>
+                          <span className="text-lg font-black text-black leading-normal">
                             {enteredExams.length > 0 ? overallGrade : '-'}
                           </span>
                         </div>
@@ -1322,7 +1322,7 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
                 </div>
 
                 {/* Signatures */}
-                <div className="relative mt-auto flex justify-between px-8 pt-4 pb-12">
+                <div className="relative mt-auto flex justify-between px-8 pt-4 pb-6">
                   <div className="flex items-end gap-2">
                     <p className="font-nastaleeq font-black text-black text-2xl whitespace-nowrap">دستخط ناظم</p>
                     <div className="w-32 border-b-2 border-black/30 pb-0.5 mb-2"></div>
