@@ -62,7 +62,7 @@ export default function Attendance({ isReadOnly = false }: { isReadOnly?: boolea
     setLoading(true);
     try {
       const canvas = await html2canvas(printRef.current, {
-        scale: 2, // Standard robust scale for clean crisp results without memory limits
+        scale: 3, // Increased scale for ultra-crisp results
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -71,12 +71,12 @@ export default function Attendance({ isReadOnly = false }: { isReadOnly?: boolea
           sanitizeHtml2Canvas(clonedDoc);
         }
       });
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const imgData = canvas.toDataURL('image/png'); // Lossless PNG to prevent text blurriness or JPEG artifacting
       const pdf = new jsPDF('l', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       const margin = 5;
-      pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
+      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
       pdf.save(`Attendance_${currentClass}_${URDU_MONTHS[selectedMonth]}.pdf`);
     } catch (e) {
       console.error(e);

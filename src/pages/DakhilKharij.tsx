@@ -176,7 +176,7 @@ export default function DakhilKharij({ isReadOnly = false }: { isReadOnly?: bool
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement;
         const canvas = await html2canvas(page, {
-          scale: 2, // Standard robust scale for clean crisp results without memory limits
+          scale: 3, // Increased scale for ultra-crisp results
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
@@ -196,7 +196,7 @@ export default function DakhilKharij({ isReadOnly = false }: { isReadOnly?: bool
           }
         });
         
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const imgData = canvas.toDataURL('image/png'); // Lossless PNG to prevent text blurriness or JPEG artifacting
         const pdfWidth = doc.internal.pageSize.getWidth();
         const pdfHeight = doc.internal.pageSize.getHeight();
         
@@ -206,7 +206,7 @@ export default function DakhilKharij({ isReadOnly = false }: { isReadOnly?: bool
         const contentHeight = (canvas.height * contentWidth) / canvas.width;
         
         if (i > 0) doc.addPage();
-        doc.addImage(imgData, 'JPEG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
+        doc.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
       }
       
       doc.save(`Dakhil_Kharij_Register_${format(new Date(), 'yyyy-MM-dd')}.pdf`);

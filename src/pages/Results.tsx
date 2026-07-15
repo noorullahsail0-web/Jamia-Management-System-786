@@ -522,7 +522,7 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
     try {
       await document.fonts.ready;
       const canvas = await html2canvas(collectiveRef.current, {
-        scale: 2, // Standard robust scale for clean crisp results without memory limits
+        scale: 3, // Increased scale for ultra-crisp results
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -531,12 +531,12 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
           sanitizeHtml2Canvas(clonedDoc);
         }
       });
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const imgData = canvas.toDataURL('image/png'); // Lossless PNG to prevent text blurriness or JPEG artifacting
       const pdf = new jsPDF('l', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       const margin = 5;
-      pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
+      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
       pdf.save(`Collective_Result_${reportClass}_${examType}_${new Date().getTime()}.pdf`);
     } catch (e) {
       console.error(e);
@@ -551,7 +551,7 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
     setDownloadingPDF(true);
     try {
       const canvas = await html2canvas(individualRef.current, {
-        scale: 2, // Standard robust scale for clean crisp results without memory limits
+        scale: 3, // Increased scale for ultra-crisp results
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -560,12 +560,12 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
           sanitizeHtml2Canvas(clonedDoc);
         }
       });
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const imgData = canvas.toDataURL('image/png'); // Lossless PNG to prevent text blurriness or JPEG artifacting
       const pdf = new jsPDF('p', 'mm', [155, 215]); // 15.5cm x 21.5cm
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       const margin = 5;
-      pdf.addImage(imgData, 'JPEG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
+      pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2), undefined, 'FAST');
       pdf.save(`Report_Card_${student?.name}_${examType}_${new Date().getTime()}.pdf`);
     } catch (e) {
       console.error(e);
