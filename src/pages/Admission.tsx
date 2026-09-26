@@ -399,139 +399,43 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
         )}
       </div>
 
-      {/* Section & Class Filter Buttons Card */}
-      <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 space-y-4">
-        {/* Section Buttons */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-black text-gray-800 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-600" />
-              سیکشن منتخب کریں:
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setFilterSection('all');
-                setFilterClass('all');
-              }}
-              className={cn(
-                "px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2",
-                filterSection === 'all'
-                  ? "bg-emerald-700 text-white shadow-md shadow-emerald-700/20"
-                  : "bg-gray-50 text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200"
-              )}
-            >
-              <span>تمام سیکشنز</span>
-              <span className={cn("px-2 py-0.5 rounded-full text-xs font-mono", filterSection === 'all' ? "bg-white/20 text-white" : "bg-gray-200 text-gray-700")}>
-                {students.length}
-              </span>
-            </button>
-            {Object.values(Section).map(sec => {
-              const secCount = students.filter(s => s.section === sec).length;
-              const isSelected = filterSection === sec;
-              return (
-                <button
-                  key={sec}
-                  onClick={() => {
-                    setFilterSection(sec);
-                    setFilterClass('all');
-                  }}
-                  className={cn(
-                    "px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2",
-                    isSelected
-                      ? "bg-emerald-700 text-white shadow-md shadow-emerald-700/20"
-                      : "bg-gray-50 text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200"
-                  )}
-                >
-                  <span>{sec}</span>
-                  <span className={cn("px-2 py-0.5 rounded-full text-xs font-mono", isSelected ? "bg-white/20 text-white" : "bg-gray-200 text-gray-700")}>
-                    {secCount}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+      {/* Attendance-style Section & Class Dropdowns Card */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* سیکشن منتخب کریں */}
+        <div className="space-y-3 text-right">
+          <label className="text-sm font-black text-emerald-900 pr-2">سیکشن منتخب کریں</label>
+          <select 
+            value={filterSection} 
+            onChange={(e) => { 
+              setFilterSection(e.target.value as Section | 'all'); 
+              setFilterClass('all'); 
+            }} 
+            className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg cursor-pointer"
+          >
+            <option value="all">تمام سیکشنز</option>
+            {Object.values(Section).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
 
-        {/* Class (درجہ) Buttons */}
-        <div className="space-y-2 pt-3 border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-black text-gray-800 flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-emerald-600" />
-              درجہ منتخب کریں:
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {/* 'تمام طلباء کرام' Button */}
-            <button
-              onClick={() => setFilterClass('all')}
-              className={cn(
-                "px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2",
-                filterClass === 'all'
-                  ? "bg-emerald-800 text-white shadow-md shadow-emerald-800/25 ring-2 ring-emerald-500/20"
-                  : "bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-200"
-              )}
-            >
-              <Users className="w-4 h-4" />
-              <span>تمام طلباء کرام</span>
-              <span className={cn("px-2 py-0.5 rounded-full text-xs font-mono", filterClass === 'all' ? "bg-white/20 text-white" : "bg-emerald-200/80 text-emerald-900")}>
-                {filterSection === 'all' ? students.length : students.filter(s => s.section === filterSection).length}
-              </span>
-            </button>
-
-            {/* Specific Class Buttons */}
-            {availableClasses.map(clsName => {
-              const classCount = students.filter(s => 
-                (filterSection === 'all' || s.section === filterSection) && s.currentClass === clsName
-              ).length;
-              const isSelected = filterClass === clsName;
-              return (
-                <button
-                  key={clsName}
-                  onClick={() => setFilterClass(clsName)}
-                  className={cn(
-                    "px-4 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2",
-                    isSelected
-                      ? "bg-emerald-700 text-white shadow-md shadow-emerald-700/20"
-                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-                  )}
-                >
-                  <span>{clsName}</span>
-                  <span className={cn("px-2 py-0.5 rounded-full text-xs font-mono", isSelected ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600")}>
-                    {classCount}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        {/* درجہ منتخب کریں */}
+        <div className="space-y-3 text-right">
+          <label className="text-sm font-black text-emerald-900 pr-2">درجہ منتخب کریں</label>
+          <select 
+            value={filterClass} 
+            onChange={(e) => setFilterClass(e.target.value)} 
+            className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg cursor-pointer"
+          >
+            <option value="all">تمام طلباء کرام</option>
+            {availableClasses.map(clsName => (
+              <option key={clsName} value={clsName}>{clsName}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Search Bar & Active Summary */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-gray-100">
-          <div className="relative flex-1">
-            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input 
-              type="text" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="رجسٹریشن نمبر، نام، ولدیت یا فون سے تلاش کریں..." 
-              className="w-full pr-10 pl-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white text-sm font-bold transition-all outline-none"
-            />
-            {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
-                title="تلاش ختم کریں"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-3 self-end sm:self-auto text-sm text-gray-600">
-            <span className="font-bold">
-              تعداد طلباء: <strong className="text-emerald-800 font-black text-base">{filteredStudents.length}</strong>
-            </span>
+        {/* تلاش کریں */}
+        <div className="space-y-3 text-right">
+          <div className="flex items-center justify-between pr-2">
+            <label className="text-sm font-black text-emerald-900">رجسٹریشن نمبر یا نام</label>
             {(filterSection !== 'all' || filterClass !== 'all' || searchTerm) && (
               <button
                 onClick={() => {
@@ -539,9 +443,28 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
                   setFilterClass('all');
                   setSearchTerm('');
                 }}
-                className="text-xs text-red-600 hover:text-red-700 hover:underline font-bold"
+                className="text-xs text-red-600 hover:text-red-700 font-bold hover:underline"
               >
                 فلٹرز ختم کریں
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input 
+              type="text" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="تلاش کریں..." 
+              className="w-full px-5 py-4 pr-12 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-lg"
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                title="تلاش ختم کریں"
+              >
+                <X className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -550,6 +473,18 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
 
       {/* Student List */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b flex items-center justify-between bg-gray-50/50">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold text-gray-600">
+              کل طلباء: <strong className="text-emerald-800 font-black text-base">{filteredStudents.length}</strong>
+            </span>
+            {(filterSection !== 'all' || filterClass !== 'all') && (
+              <span className="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold">
+                {filterSection !== 'all' ? filterSection : 'تمام سیکشنز'} - {filterClass !== 'all' ? filterClass : 'تمام طلباء کرام'}
+              </span>
+            )}
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-right">
             <thead>
