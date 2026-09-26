@@ -16,7 +16,8 @@ import {
   WifiOff,
   AlertTriangle,
   RefreshCcw,
-  MoreVertical
+  MoreVertical,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -31,7 +32,7 @@ import DakhilKharij from './pages/DakhilKharij';
 
 type Tab = 'dashboard' | 'admission' | 'attendance' | 'results' | 'register';
 
-function AppMenuDropdown({ onUpdate, darkTheme = false }: { onUpdate: () => void; darkTheme?: boolean }) {
+function AppMenuDropdown({ onUpdate, onInstall, darkTheme = false }: { onUpdate: () => void; onInstall?: () => void; darkTheme?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -63,12 +64,30 @@ function AppMenuDropdown({ onUpdate, darkTheme = false }: { onUpdate: () => void
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             className={cn(
-              "absolute left-0 mt-2 w-52 rounded-2xl shadow-2xl border z-[100] p-1.5 backdrop-blur-md overflow-hidden",
+              "absolute left-0 mt-2 w-56 rounded-2xl shadow-2xl border z-[100] p-1.5 backdrop-blur-md overflow-hidden",
               darkTheme 
                 ? "bg-[#0b3d32]/95 border-emerald-800/50 text-white shadow-black/45" 
                 : "bg-white/95 border-gray-100 text-gray-900 shadow-gray-200"
             )}
           >
+            {onInstall && (
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  onInstall();
+                }}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black text-right transition-all cursor-pointer mb-1",
+                  darkTheme 
+                    ? "hover:bg-white/10 text-emerald-100 hover:text-white" 
+                    : "hover:bg-gray-50 text-gray-700 hover:text-emerald-600"
+                )}
+              >
+                <Download className="w-4 h-4 text-emerald-400" />
+                <span>ایپ انسٹال کریں (Install App)</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setIsOpen(false);
@@ -163,16 +182,17 @@ export default function App() {
       setIsIframe(true);
     }
 
-    // Check Service Worker status
+    // Register and check Service Worker status
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(() => navigator.serviceWorker.ready)
         .then((reg) => {
           setSwStatus('active');
           console.log('Service Worker is active and ready:', reg);
         })
         .catch((err) => {
           setSwStatus('failed');
-          console.error('Service Worker ready check failed:', err);
+          console.log('Service Worker note:', err);
         });
     } else {
       setSwStatus('failed');
@@ -432,20 +452,19 @@ export default function App() {
                 <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="bg-emerald-100 p-2 rounded-xl shrink-0 text-emerald-700">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
+                      <Download className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-black text-sm text-emerald-950 mb-1">جامعہ سسٹم کی آفیشل ایپ ڈاؤن لوڈ کریں</h3>
+                      <h3 className="font-black text-sm text-emerald-950 mb-1">جامعہ سسٹم ایپ / سافٹ ویئر انسٹال کریں</h3>
                       <p className="text-xs text-emerald-800 leading-relaxed mb-3">
-                        اسے اپنے موبائل میں ڈاؤن لوڈ کر کے بالکل ایک عام ایپ (WebAPK) کی طرح چلائیں، جو براؤزر مینو کے بغیر فل اسکرین پر تیز ترین کام کرتی ہے۔
+                        اسے اپنے کمپیوٹر (ونڈوز) یا موبائل پر بغیر براؤزر کے الگ مکمل سافٹ ویئر کی طرح انسٹال کریں۔
                       </p>
                       <button
                         onClick={handleInstallClick}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all shadow-md text-center"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all shadow-md text-center flex items-center justify-center gap-2"
                       >
-                        {deferredPrompt ? 'ابھی ایپ انسٹال کریں' : 'ایپ انسٹال کرنے کا طریقہ (شارٹ کٹ فکس)'}
+                        <Download className="w-4 h-4" />
+                        <span>{deferredPrompt ? 'ابھی ایپ انسٹال کریں' : 'ایپ انسٹال کرنے کا طریقہ (گوگل شارٹ کٹ فکس)'}</span>
                       </button>
                     </div>
                   </div>
@@ -534,7 +553,7 @@ export default function App() {
               </div>
             </div>
             {isSidebarOpen && (
-              <AppMenuDropdown onUpdate={handleForceUpdateApp} darkTheme={true} />
+              <AppMenuDropdown onUpdate={handleForceUpdateApp} onInstall={handleInstallClick} darkTheme={true} />
             )}
           </div>
 
@@ -581,11 +600,9 @@ export default function App() {
                 )}
                 title="ایپ انسٹال کریں"
               >
-                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
+                <Download className="w-4 h-4 shrink-0" />
                 <span className={cn("transition-all duration-300 whitespace-nowrap", !isSidebarOpen && "lg:hidden")}>
-                  {deferredPrompt ? 'موبائل ایپ انسٹال کریں' : 'ایپ انسٹالیشن گائیڈ'}
+                  {deferredPrompt ? 'کمپیوٹر / موبائل ایپ انسٹال کریں' : 'ایپ انسٹالیشن رہنمائی'}
                 </span>
               </button>
             )}
@@ -627,7 +644,7 @@ export default function App() {
             <h1 className="text-lg font-bold text-emerald-950 font-nastaleeq">جامعہ تعلیم القرآن ناگمان ضلع پشاور</h1>
           </div>
           <div className="flex items-center gap-1.5">
-            <AppMenuDropdown onUpdate={handleForceUpdateApp} darkTheme={false} />
+            <AppMenuDropdown onUpdate={handleForceUpdateApp} onInstall={handleInstallClick} darkTheme={false} />
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
@@ -694,8 +711,8 @@ export default function App() {
             >
               <div className="bg-[#022c22] p-5 text-white flex items-center justify-between border-b border-white/5">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-xl">📱</span>
-                  <h3 className="font-black text-lg font-nastaleeq leading-tight text-white">ایپ انسٹال کرنے کا حتمی طریقہ</h3>
+                  <span className="text-xl">💻</span>
+                  <h3 className="font-black text-lg font-nastaleeq leading-tight text-white">کمپیوٹر پر ایپ انسٹال کرنے کا مکمل حل</h3>
                 </div>
                 <button 
                   onClick={() => setShowPwaGuideModal(false)}
@@ -706,96 +723,78 @@ export default function App() {
               </div>
 
               <div className="p-6 space-y-4 text-sm leading-relaxed text-gray-800 overflow-y-auto max-h-[80vh] custom-scrollbar">
-                {/* Real-time Diagnostics Card */}
-                <div className="bg-emerald-50 border border-emerald-150 rounded-2xl p-4 text-xs space-y-2">
-                  <p className="font-black text-emerald-950 mb-1 flex items-center gap-1.5 text-sm">
-                    <span>⚙️</span>
-                    <span>سسٹم کا لائیو اسٹیٹس (Diagnostics):</span>
+                {/* Notice Box Explaining WHY Google shortcut happened and the direct 1-second fix */}
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-amber-950 text-xs space-y-2">
+                  <p className="font-black text-amber-950 flex items-center gap-1.5 text-sm">
+                    <span>💡</span>
+                    <span>گوگل شارٹ کٹ کو مکمل خود مختار ایپ بنانے کے 3 آسان حل:</span>
                   </p>
-                  <div className="flex justify-between items-center py-1 border-b border-emerald-100/50">
-                    <span className="text-gray-600 font-medium">سروس ورکر (Service Worker):</span>
-                    {swStatus === 'active' ? (
-                      <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span>فعال اور تیار ہے</span>
-                        <span>✔️</span>
-                      </span>
-                    ) : swStatus === 'checking' ? (
-                      <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span>چیک ہو رہا ہے</span>
-                        <span>⏳</span>
-                      </span>
-                    ) : (
-                      <span className="font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span>لوڈ نہیں ہوا</span>
-                        <span>❌</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-gray-600 font-medium">براؤزر انسٹالر (Prompt State):</span>
-                    {deferredPrompt ? (
-                      <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span>کلک کے لیے تیار</span>
-                        <span>✔️</span>
-                      </span>
-                    ) : (
-                      <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span>مینو سے دستیاب</span>
-                        <span>🔍</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Warning about Incognito */}
-                <div className="bg-red-50 border border-red-150 rounded-2xl p-4 text-red-950 text-xs">
-                  <p className="font-black mb-1 flex items-center gap-1 text-red-900">
-                    <span>⚠️</span>
-                    <span>اہم تنبیہ (خفیہ موڈ استعمال نہ کریں):</span>
-                  </p>
-                  <p>
-                    گوگل کروم کے <strong>Incognito (خفیہ/پرائیویٹ) موڈ میں ایپ انسٹالیشن مکمل بند ہوتی ہے</strong>۔ اس بات کو یقینی بنائیں کہ آپ کروم کا عام/نارمل موڈ استعمال کر رہے ہیں۔
+                  <p className="leading-relaxed">
+                    کروم کے نئے ورژنز میں پاپ اپ سے "Open as window" ہٹا دیا گیا ہے، لیکن کروم کے اندر موجود <strong>chrome://apps</strong> یا <strong>مائیکروسافٹ ایج</strong> سے یہ 10 سیکنڈ میں بالکل اصلی سافٹ ویئر کی طرح انسٹال ہو جاتا ہے۔
                   </p>
                 </div>
 
+                {/* Step by step Solutions */}
                 <div className="space-y-4 text-right">
-                  {/* Step 1: Chrome New Menu */}
-                  <div className="flex gap-3 items-start">
-                    <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+                  {/* Solution 1: chrome://apps */}
+                  <div className="flex gap-3 items-start bg-emerald-50/70 p-4 rounded-2xl border border-emerald-300">
+                    <span className="bg-emerald-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
                     <div>
-                      <p className="font-black text-gray-900">کروم کے نئے "محفوظ اور شیئر کریں" مینو میں دیکھیں:</p>
-                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                        گوگل کروم کی نئی اپڈیٹ میں انسٹال کا بٹن تبدیل کر دیا گیا ہے۔ براؤزر کے اوپر دائیں کونے میں تین نقطوں <strong>(⋮)</strong> پر کلک کریں، پھر <strong>"Save and share" (محفوظ کریں اور شیئر کریں)</strong> پر جائیں۔ وہاں آپ کو <strong>"Install app"</strong> یا <strong>"جامعہ سسٹم انسٹال کریں"</strong> کا بٹن مل جائے گا!
+                      <p className="font-black text-emerald-950 text-sm">حل نمبر 1: کروم کے اندر chrome://apps کے ذریعے (سب سے کامیاب)</p>
+                      <p className="text-xs text-emerald-900 mt-1 leading-relaxed">
+                        1. گوگل کروم کے ایڈریس بار میں لکھیں: <strong className="font-mono text-emerald-950 bg-white px-2 py-0.5 rounded border border-emerald-300">chrome://apps</strong> اور انٹر دبائیں۔
+                      </p>
+                      <p className="text-xs text-emerald-900 mt-1 leading-relaxed">
+                        2. وہاں آپ کو جامعہ سسٹم کا آئیکن نظر آئے گا۔ اس آئیکن پر <strong>Right Click (رائٹ کلک)</strong> کریں۔
+                      </p>
+                      <p className="text-xs text-emerald-900 mt-1 leading-relaxed">
+                        3. مینو میں <strong>"Open as window" (ونڈو کے طور پر کھولیں)</strong> پر کلک کریں تاکہ اس پر ٹک (✔) لگ جائے۔
+                      </p>
+                      <p className="text-xs text-emerald-900 mt-1 leading-relaxed">
+                        4. دوبارہ رائٹ کلک کر کے <strong>"Create shortcuts"</strong> پر کلک کر کے Desktop پر ٹک لگائیں۔ اب یہ ڈیسک ٹاپ پر بغیر براؤزر کے الگ سافٹ ویئر کی طرح کھلے گا!
                       </p>
                     </div>
                   </div>
 
-                  {/* Step 2: Mobile/Android Chrome */}
-                  <div className="flex gap-3 items-start">
-                    <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+                  {/* Solution 2: Microsoft Edge */}
+                  <div className="flex gap-3 items-start bg-blue-50/70 p-4 rounded-2xl border border-blue-200">
+                    <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
                     <div>
-                      <p className="font-black text-gray-900">موبائل فون پر انسٹال کرنے کا طریقہ:</p>
-                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                        اپنے اینڈرائیڈ فون کے کروم براؤزر میں یہ لنک کھولیں، تین نقطوں <strong>(⋮)</strong> پر کلک کریں اور مینو سے <strong>"Install app"</strong> یا <strong>"Add to Home screen"</strong> پر کلک کریں۔ ایپ فوری طور پر موبائل کی ہوم اسکرین پر آ جائے گی۔
+                      <p className="font-black text-blue-950 text-sm">حل نمبر 2: مائیکروسافٹ ایج (Microsoft Edge) سے 1 کلک میں انسٹال</p>
+                      <p className="text-xs text-blue-900 mt-1 leading-relaxed">
+                        ونڈوز میں مائیکروسافٹ ایج پہلے سے موجود ہوتا ہے۔ ایج براؤزر میں یہ لنک کھولیں، اوپر ایڈریس بار میں یا تین نقطوں میں <strong>Apps &gt; "Install this site as an app"</strong> کا آپشن آتا ہے۔ یہ ونڈوز کے ساتھ 100% اصلی سافٹ ویئر بنا دیتا ہے۔
                       </p>
                     </div>
                   </div>
 
-                  {/* Step 3: Clear and reload (Vercel Fix) */}
-                  <div className="flex gap-3 items-start">
-                    <span className="bg-emerald-100 text-emerald-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
+                  {/* Solution 3: Shortcut Properties --app= flag */}
+                  <div className="flex gap-3 items-start bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                    <span className="bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
                     <div>
-                      <p className="font-black text-gray-900">پرانے ڈیٹا (Cache) کو مکمل ہٹائیں:</p>
-                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                        چونکہ آپ نے ورسل پر پروجیکٹ دوبارہ ڈیپلائے کیا ہے، براؤزر پرانی فائلیں استعمال کر رہا ہو سکتا ہے۔ کروم کے تین نقطوں پر کلک کر کے <strong>Settings &gt; Privacy and security &gt; Clear browsing data</strong> پر جائیں، وہاں صرف <strong>"Cached images and files"</strong> کو منتخب کر کے صاف کریں اور پیج کو 2 بار ریفریش کریں۔
+                      <p className="font-black text-gray-950 text-sm">حل نمبر 3: پہلے سے بنے ہوئے شارٹ کٹ کی پراپرٹیز تبدیل کریں</p>
+                      <p className="text-xs text-gray-700 mt-1 leading-relaxed">
+                        ڈیسک ٹاپ پر جو گوگل شارٹ کٹ بنا ہے، اس پر Right Click کریں &gt; <strong>Properties</strong> کھولیں۔ <strong>Target</strong> خانے میں ویب سائٹ کے لنک سے پہلے <code className="bg-gray-200 px-1.5 py-0.5 rounded font-mono text-black font-bold">--app=</code> کا اضافہ کر دیں اور OK کر دیں۔ اب وہ بغیر کسی براؤزر ٹیب کے اکیلی ونڈو میں کھلے گا!
                       </p>
                     </div>
                   </div>
                 </div>
+
+                {deferredPrompt && (
+                  <button
+                    onClick={() => {
+                      setShowPwaGuideModal(false);
+                      handleInstallClick();
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md transition-all text-center text-xs flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>ابھی انسٹالیشن کا ونڈوز پاپ اپ کھولیں</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => setShowPwaGuideModal(false)}
-                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md transition-all text-center text-xs"
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-xl transition-all text-center text-xs"
                 >
                   ٹھیک ہے، میں سمجھ گیا
                 </button>

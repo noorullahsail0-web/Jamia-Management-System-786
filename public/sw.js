@@ -1,11 +1,17 @@
-const CACHE_NAME = 'jamia-system-v11';
+const CACHE_NAME = 'jamia-system-v13';
 const ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.ico',
+  '/favicon-32x32.png',
+  '/favicon-16x16.png',
   '/logo.png',
   '/icon-192-v2.png',
-  '/icon-512-v2.png'
+  '/icon-512-v2.png',
+  '/icon-maskable-192.png',
+  '/icon-maskable-512.png',
+  '/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (e) => {
