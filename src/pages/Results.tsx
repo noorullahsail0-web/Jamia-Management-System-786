@@ -73,7 +73,17 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
           const rSnap = await getDocs(rq);
           if (!rSnap.empty) {
             const res = rSnap.docs[0].data();
-            if (res.subjects) setMarks(res.subjects);
+            if (res.subjects) {
+              const subs = { ...res.subjects };
+              if (subs['حدر/اجراء قواعد التجوید'] === undefined) {
+                if (subs['اجراء قواعد التجوید'] !== undefined) {
+                  subs['حدر/اجراء قواعد التجوید'] = subs['اجراء قواعد التجوید'];
+                } else if (subs['حدر'] !== undefined) {
+                  subs['حدر/اجراء قواعد التجوید'] = subs['حدر'];
+                }
+              }
+              setMarks(subs);
+            }
             if (res.hifzBreakdown) setHifzMarks(res.hifzBreakdown);
           } else {
             setMarks({});
@@ -128,7 +138,17 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
       
       const initialResults: Record<string, any> = {};
       students.forEach(s => {
-        initialResults[s.id] = resultsMap[s.id] || { subjects: {}, hifzBreakdown: { q1: 0, q2: 0, q3: 0, lahja: 0, safai: 0, adiya: 0 } };
+        const studentRes = resultsMap[s.id] || { subjects: {}, hifzBreakdown: { q1: 0, q2: 0, q3: 0, lahja: 0, safai: 0, adiya: 0 } };
+        if (studentRes.subjects) {
+          if (studentRes.subjects['حدر/اجراء قواعد التجوید'] === undefined) {
+            if (studentRes.subjects['اجراء قواعد التجوید'] !== undefined) {
+              studentRes.subjects['حدر/اجراء قواعد التجوید'] = studentRes.subjects['اجراء قواعد التجوید'];
+            } else if (studentRes.subjects['حدر'] !== undefined) {
+              studentRes.subjects['حدر/اجراء قواعد التجوید'] = studentRes.subjects['حدر'];
+            }
+          }
+        }
+        initialResults[s.id] = studentRes;
       });
       setClassResults(initialResults);
     } catch (e: any) {
@@ -334,11 +354,22 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
       // Only include results for students who belong to the selected section and class
       const filteredResults = results
         .filter(r => studentsMap[r.studentId] !== undefined)
-        .map(r => ({
-          ...r,
-          studentName: studentsMap[r.studentId].name,
-          fatherName: studentsMap[r.studentId].fatherName || '-'
-        }));
+        .map(r => {
+          const subjects = { ...(r.subjects || {}) };
+          if (subjects['حدر/اجراء قواعد التجوید'] === undefined) {
+            if (subjects['اجراء قواعد التجوید'] !== undefined) {
+              subjects['حدر/اجراء قواعد التجوید'] = subjects['اجراء قواعد التجوید'];
+            } else if (subjects['حدر'] !== undefined) {
+              subjects['حدر/اجراء قواعد التجوید'] = subjects['حدر'];
+            }
+          }
+          return {
+            ...r,
+            subjects,
+            studentName: studentsMap[r.studentId].name,
+            fatherName: studentsMap[r.studentId].fatherName || '-'
+          };
+        });
 
       setResultsList(filteredResults.sort((a: any, b: any) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true })));
     } catch (e: any) {
@@ -392,6 +423,15 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
       const results: Record<string, any> = {};
       snapshot.forEach(doc => {
         const data = doc.data();
+        if (data.subjects) {
+          if (data.subjects['حدر/اجراء قواعد التجوید'] === undefined) {
+            if (data.subjects['اجراء قواعد التجوید'] !== undefined) {
+              data.subjects['حدر/اجراء قواعد التجوید'] = data.subjects['اجراء قواعد التجوید'];
+            } else if (data.subjects['حدر'] !== undefined) {
+              data.subjects['حدر/اجراء قواعد التجوید'] = data.subjects['حدر'];
+            }
+          }
+        }
         results[data.examType] = data;
       });
       return results;
