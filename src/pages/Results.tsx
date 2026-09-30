@@ -49,6 +49,36 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
   const collectiveRef = useRef<HTMLDivElement>(null);
   const individualRef = useRef<HTMLDivElement>(null);
 
+  const normalizeStudentSubjects = (subjects?: Record<string, any>) => {
+    if (!subjects) return {};
+    const subs = { ...subjects };
+    // تجوید للعالمات: حدر/اجراء قواعد التجوید
+    if (subs['حدر/اجراء قواعد التجوید'] === undefined) {
+      if (subs['اجراء قواعد التجوید'] !== undefined) {
+        subs['حدر/اجراء قواعد التجوید'] = subs['اجراء قواعد التجوید'];
+      } else if (subs['حدر'] !== undefined) {
+        subs['حدر/اجراء قواعد التجوید'] = subs['حدر'];
+      }
+    }
+    // درجہ اعدادیہ: املا (سابقہ نام: اسلامی تعلیمات، املاء)
+    if (subs['املا'] === undefined) {
+      if (subs['اسلامی تعلیمات'] !== undefined) {
+        subs['املا'] = subs['اسلامی تعلیمات'];
+      } else if (subs['املاء'] !== undefined) {
+        subs['املا'] = subs['املاء'];
+      }
+    }
+    // درجہ اعدادیہ: قاعدہ (سابقہ نام: اچھا قاعدہ، اچھاقاعدہ)
+    if (subs['قاعدہ'] === undefined) {
+      if (subs['اچھا قاعدہ'] !== undefined) {
+        subs['قاعدہ'] = subs['اچھا قاعدہ'];
+      } else if (subs['اچھاقاعدہ'] !== undefined) {
+        subs['قاعدہ'] = subs['اچھاقاعدہ'];
+      }
+    }
+    return subs;
+  };
+
   const searchStudent = async () => {
     if (!regNoSearch) return;
     setLoading(true);
@@ -74,15 +104,7 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
           if (!rSnap.empty) {
             const res = rSnap.docs[0].data();
             if (res.subjects) {
-              const subs = { ...res.subjects };
-              if (subs['حدر/اجراء قواعد التجوید'] === undefined) {
-                if (subs['اجراء قواعد التجوید'] !== undefined) {
-                  subs['حدر/اجراء قواعد التجوید'] = subs['اجراء قواعد التجوید'];
-                } else if (subs['حدر'] !== undefined) {
-                  subs['حدر/اجراء قواعد التجوید'] = subs['حدر'];
-                }
-              }
-              setMarks(subs);
+              setMarks(normalizeStudentSubjects(res.subjects));
             }
             if (res.hifzBreakdown) setHifzMarks(res.hifzBreakdown);
           } else {
@@ -140,13 +162,7 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
       students.forEach(s => {
         const studentRes = resultsMap[s.id] || { subjects: {}, hifzBreakdown: { q1: 0, q2: 0, q3: 0, lahja: 0, safai: 0, adiya: 0 } };
         if (studentRes.subjects) {
-          if (studentRes.subjects['حدر/اجراء قواعد التجوید'] === undefined) {
-            if (studentRes.subjects['اجراء قواعد التجوید'] !== undefined) {
-              studentRes.subjects['حدر/اجراء قواعد التجوید'] = studentRes.subjects['اجراء قواعد التجوید'];
-            } else if (studentRes.subjects['حدر'] !== undefined) {
-              studentRes.subjects['حدر/اجراء قواعد التجوید'] = studentRes.subjects['حدر'];
-            }
-          }
+          studentRes.subjects = normalizeStudentSubjects(studentRes.subjects);
         }
         initialResults[s.id] = studentRes;
       });
@@ -354,22 +370,12 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
       // Only include results for students who belong to the selected section and class
       const filteredResults = results
         .filter(r => studentsMap[r.studentId] !== undefined)
-        .map(r => {
-          const subjects = { ...(r.subjects || {}) };
-          if (subjects['حدر/اجراء قواعد التجوید'] === undefined) {
-            if (subjects['اجراء قواعد التجوید'] !== undefined) {
-              subjects['حدر/اجراء قواعد التجوید'] = subjects['اجراء قواعد التجوید'];
-            } else if (subjects['حدر'] !== undefined) {
-              subjects['حدر/اجراء قواعد التجوید'] = subjects['حدر'];
-            }
-          }
-          return {
-            ...r,
-            subjects,
-            studentName: studentsMap[r.studentId].name,
-            fatherName: studentsMap[r.studentId].fatherName || '-'
-          };
-        });
+        .map(r => ({
+          ...r,
+          subjects: normalizeStudentSubjects(r.subjects),
+          studentName: studentsMap[r.studentId].name,
+          fatherName: studentsMap[r.studentId].fatherName || '-'
+        }));
 
       setResultsList(filteredResults.sort((a: any, b: any) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true })));
     } catch (e: any) {
@@ -424,13 +430,7 @@ export default function Results({ isReadOnly = false }: { isReadOnly?: boolean }
       snapshot.forEach(doc => {
         const data = doc.data();
         if (data.subjects) {
-          if (data.subjects['حدر/اجراء قواعد التجوید'] === undefined) {
-            if (data.subjects['اجراء قواعد التجوید'] !== undefined) {
-              data.subjects['حدر/اجراء قواعد التجوید'] = data.subjects['اجراء قواعد التجوید'];
-            } else if (data.subjects['حدر'] !== undefined) {
-              data.subjects['حدر/اجراء قواعد التجوید'] = data.subjects['حدر'];
-            }
-          }
+          data.subjects = normalizeStudentSubjects(data.subjects);
         }
         results[data.examType] = data;
       });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { db, storage, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -6,8 +6,13 @@ import { collection, addDoc, getDocs, query, where, orderBy, limit, updateDoc, d
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Section, Student } from '../types';
 import { CLASS_DATA, SECTION_PREFIXES } from '../constants';
-import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save, Trash2, AlertCircle, GraduationCap, Users, CheckSquare, Square, TrendingUp, Layers } from 'lucide-react';
+import { Plus, Search, FileText, UserPlus, Camera, Loader2, X, Save, Trash2, AlertCircle, GraduationCap, Users, CheckSquare, Square, TrendingUp, Layers, Calendar } from 'lucide-react';
 import { cn, compressImage } from '../lib/utils';
+
+const URDU_MONTH_NAMES = [
+  'جنوری', 'فروری', 'مارچ', 'اپریل', 'مئی', 'جون',
+  'جولائی', 'اگست', 'ستمبر', 'اکتوبر', 'نومبر', 'دسمبر'
+];
 
 export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean }) {
   const [students, setStudents] = useState<Student[]>([]);
@@ -19,6 +24,10 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [processing, setProcessing] = useState(false);
+
+  // Date of Birth state (DD/MM/YYYY)
+  const [dobValue, setDobValue] = useState('');
+  const hiddenDobPickerRef = useRef<HTMLInputElement>(null);
 
   // Filter states for Student List
   const [filterSection, setFilterSection] = useState<Section | 'all'>('all');
@@ -239,7 +248,97 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
     return `${prefix}${year}-${classCodeStr}-${serialStr}`;
   };
 
+  const getDobUrduDescription = (val: string) => {
+    if (!val) return null;
+    const parts = val.split('/');
+    if (parts.length === 3 && parts[2].length === 4) {
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const y = parseInt(parts[2], 10);
+      if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+        if (d < 1 || d > 31) {
+          return { text: 'دن 1 سے 31 کے درمیان ہونا چاہیے', isError: true };
+        }
+        if (m < 1 || m > 12) {
+          return { text: 'مہینہ 1 سے 12 کے درمیان ہونا چاہیے', isError: true };
+        }
+        if (y < 1920 || y > new Date().getFullYear()) {
+          return { text: 'سال درست درج کریں', isError: true };
+        }
+        return { 
+          text: `تاریخ پیدائش: ${d} ${URDU_MONTH_NAMES[m - 1]} ${y}ء (دن: ${d}، مہینہ: ${m}، سال: ${y})`,
+          isError: false 
+        };
+      }
+    }
+    return null;
+  };
+
+  const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    const isDeleting = raw.length < dobValue.length;
+    const digits = raw.replace(/\D/g, '').slice(0, 8);
+    
+    let formatted = '';
+    if (digits.length > 0) {
+      formatted = digits.slice(0, 2);
+      if (digits.length > 2) {
+        formatted += '/' + digits.slice(2, 4);
+        if (digits.length > 4) {
+          formatted += '/' + digits.slice(4, 8);
+        }
+      } else if (digits.length === 2 && !isDeleting) {
+        formatted += '/';
+      }
+    }
+    if (digits.length >= 4 && digits.length < 5 && !isDeleting && !formatted.endsWith('/')) {
+      formatted += '/';
+    }
+
+    setDobValue(formatted);
+    setValue('dob', formatted, { shouldValidate: true });
+
+    // Sync to hidden picker if complete
+    if (digits.length === 8 && hiddenDobPickerRef.current) {
+      const d = digits.slice(0, 2);
+      const m = digits.slice(2, 4);
+      const y = digits.slice(4, 8);
+      hiddenDobPickerRef.current.value = `${y}-${m}-${d}`;
+    }
+  };
+
+  const handleDobKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === '/') {
+      e.preventDefault();
+      const parts = dobValue.split('/');
+      if (parts.length === 1 && parts[0].length === 1) {
+        const val = `0${parts[0]}/`;
+        setDobValue(val);
+        setValue('dob', val, { shouldValidate: true });
+      } else if (parts.length === 2 && parts[1].length === 1) {
+        const val = `${parts[0]}/0${parts[1]}/`;
+        setDobValue(val);
+        setValue('dob', val, { shouldValidate: true });
+      }
+    }
+  };
+
+  const handleCalendarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val) {
+      const [y, m, d] = val.split('-');
+      const formatted = `${d}/${m}/${y}`;
+      setDobValue(formatted);
+      setValue('dob', formatted, { shouldValidate: true });
+    }
+  };
+
   const onSubmit = async (data: any) => {
+    if (!dobValue || dobValue.length < 10) {
+      alert('براہ کرم تاریخ پیدائش مکمل درج کریں (ترتیب: دن/مہینہ/سال، مثلاً: 20/12/2012)');
+      return;
+    }
+
     setLoading(true);
     try {
       let photoUrl = photoPreview || '';
@@ -252,6 +351,7 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
         setUploadingInfo('ڈیٹا اپڈیٹ ہو رہا ہے...');
         await updateDoc(doc(db, 'students', editingStudent.id), {
           ...data,
+          dob: dobValue,
           photoUrl,
           isResident: data.isResident === 'true',
           updatedAt: new Date().toISOString()
@@ -264,6 +364,7 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
         setUploadingInfo('ڈیٹا محفوظ ہو رہا ہے...');
         await addDoc(collection(db, 'students'), {
           ...data,
+          dob: dobValue,
           regNo,
           photoUrl,
           isResident: data.isResident === 'true',
@@ -275,6 +376,7 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
 
       setShowForm(false);
       setEditingStudent(null);
+      setDobValue('');
       reset();
       setSelectedPhoto(null);
       setPhotoPreview(null);
@@ -290,11 +392,19 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
   const startEdit = (student: Student) => {
     setEditingStudent(student);
     setShowForm(true);
+
+    let displayDob = student.dob || '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(displayDob)) {
+      const [y, m, d] = displayDob.split('-');
+      displayDob = `${d}/${m}/${y}`;
+    }
+    setDobValue(displayDob);
+
     // Set form values
     reset({
       name: student.name,
       fatherName: student.fatherName,
-      dob: student.dob,
+      dob: displayDob,
       cnic: student.cnic,
       section: student.section,
       currentClass: student.currentClass,
@@ -365,6 +475,8 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
     return true;
   });
 
+  const dobDescription = getDobUrduDescription(dobValue);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -389,7 +501,12 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
               <span>طلباء کی پروموشن (اگلا درجہ)</span>
             </button>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setEditingStudent(null);
+                setDobValue('');
+                reset();
+                setShowForm(true);
+              }}
               className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl transition-all shadow-md font-bold text-sm"
             >
               <UserPlus className="w-5 h-5" />
@@ -580,7 +697,7 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
                 <p className="text-gray-500 text-sm">طالب علم کی معلومات درج یا اپڈیٹ کریں۔</p>
               </div>
               <button 
-                onClick={() => { setShowForm(false); setEditingStudent(null); reset(); setSelectedPhoto(null); setPhotoPreview(null); }}
+                onClick={() => { setShowForm(false); setEditingStudent(null); reset(); setSelectedPhoto(null); setPhotoPreview(null); setDobValue(''); }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-6 h-6 text-gray-400" />
@@ -651,8 +768,48 @@ export default function Admission({ isReadOnly = false }: { isReadOnly?: boolean
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-right font-medium text-gray-700">تاریخ پیدائش</label>
-                  <input {...register('dob', { required: true })} type="date" className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-right font-bold" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">
+                      ترتیب: دن / مہینہ / سال (DD/MM/YYYY)
+                    </span>
+                    <label className="block text-right font-medium text-gray-700">
+                      تاریخ پیدائش <span className="text-red-500">*</span>
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      dir="ltr"
+                      value={dobValue}
+                      onChange={handleDobChange}
+                      onKeyDown={handleDobKeyDown}
+                      placeholder="DD/MM/YYYY (مثلاً 20/12/2012)"
+                      className="w-full px-4 py-3 pr-12 bg-gray-50 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-lg text-center font-mono font-bold tracking-wider"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => hiddenDobPickerRef.current?.showPicker ? hiddenDobPickerRef.current.showPicker() : hiddenDobPickerRef.current?.focus()}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all"
+                      title="کیلنڈر سے تاریخ منتخب کریں"
+                    >
+                      <Calendar className="w-5 h-5" />
+                    </button>
+                    <input
+                      type="date"
+                      ref={hiddenDobPickerRef}
+                      onChange={handleCalendarPick}
+                      className="sr-only absolute pointer-events-none opacity-0"
+                      tabIndex={-1}
+                    />
+                  </div>
+                  {dobDescription && (
+                    <p className={cn(
+                      "text-xs font-bold text-right pr-1",
+                      dobDescription.isError ? "text-red-500" : "text-emerald-700"
+                    )}>
+                      {dobDescription.isError ? '⚠️ ' : '✓ '}{dobDescription.text}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

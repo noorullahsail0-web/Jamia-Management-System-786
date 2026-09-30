@@ -56,6 +56,15 @@ export default function DakhilKharij({ isReadOnly = false }: { isReadOnly?: bool
   const [processing, setProcessing] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
 
+  const formatDisplayDob = (dob?: string) => {
+    if (!dob) return '-';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+      const [y, m, d] = dob.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    return dob;
+  };
+
   useEffect(() => {
     fetchStudents();
   }, []);
@@ -224,7 +233,7 @@ export default function DakhilKharij({ isReadOnly = false }: { isReadOnly?: bool
       'تاریخ داخلہ': s.admissionDate,
       'نام طالب علم': s.name,
       'ولدیت': s.fatherName,
-      'تاریخ پیدائش': s.dob,
+      'تاریخ پیدائش': formatDisplayDob(s.dob),
       'سکونت': s.address,
       'جماعت (داخلہ)': s.currentClass,
       'جماعت (اخراج)': s.leavingClass || '-',
@@ -497,7 +506,7 @@ export default function DakhilKharij({ isReadOnly = false }: { isReadOnly?: bool
                       <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.admissionDate}</td>
                       <td className="px-1 border border-emerald-100 text-[13px] font-nastaleeq font-black text-center truncate">{s.name}</td>
                       <td className="px-1 border border-emerald-100 text-[12px] font-nastaleeq font-bold text-center truncate">{s.fatherName}</td>
-                      <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.dob}</td>
+                      <td className="px-1 border border-emerald-100 text-[10px] text-center font-mono">{formatDisplayDob(s.dob)}</td>
                       <td className="px-1 border border-emerald-100 text-[9px] text-center truncate px-2">{s.address}</td>
                       <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.currentClass}</td>
                       <td className="px-1 border border-emerald-100 text-[10px] text-center">{s.leavingClass || '-'}</td>
